@@ -187,8 +187,10 @@ class ProSafeRetrieve:
 
     def writeResult(self):
         result = ""
+        result += 'prosafe_switch_info{hostname="'+self.hostname+', '
         for key, value in self.infos.items():
-            result += 'prosafe_'+key+'{hostname="'+self.hostname+'"} ' + value + '\n'
+            result += key + '="' + value + '", '
+        result += '} 1\n'
         for status in self.status:
             speedmap = {'Nicht verbunden': 0, '100M': 100, '1000M': 1000}
             result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
