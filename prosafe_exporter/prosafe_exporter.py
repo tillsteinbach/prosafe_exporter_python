@@ -187,7 +187,7 @@ class ProSafeRetrieve:
 
     def writeResult(self):
         result = ""
-        result += 'prosafe_switch_info{hostname="'+self.hostname+', '
+        result += 'prosafe_switch_info{hostname="'+self.hostname+'", '
         for key, value in self.infos.items():
             result += key + '="' + value + '", '
         result += '} 1\n'
