@@ -50,7 +50,7 @@ class ProSafeExporter:
             try:
                 retriever.retrieve()
                 retriever.writeResult()
-            except (ConnectionRefusedError):
+            except (ConnectionRefusedError, requests.exceptions.ConnectionError):
                 pass
         self.logger.info('Retrieving done')
 
@@ -120,70 +120,76 @@ class ProSafeRetrieve:
                 raise ConnectionRefusedError(self.error)
 
     def retrieve(self):
-        self.error = ""
         self.logger.info('Start retrieval for %s', self.hostname)
-        self.__login()
-        infoRequest = self.session.post('http://'+self.hostname+'/switch_info.htm')
+
+        self.error = ""
         self.infos = None
         self.status = None
         self.statistics = None
+  
+        try:
+            self.__login()
+            infoRequest = self.session.post('http://'+self.hostname+'/switch_info.htm')
 
-        if 'RedirectToLoginPage' in infoRequest.text:
-            self.error = 'Login failed for ' + self.hostname
+            if 'RedirectToLoginPage' in infoRequest.text:
+                self.error = 'Login failed for ' + self.hostname
+                self.logger.error(self.error)
+                raise ConnectionRefusedError(self.error)
+            tree = html.fromstring(infoRequest.content)
+            allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
+            allinfos = [allinfos[x:x+2] for x in range(0, len(allinfos), 2)]
+            self.infos = dict()
+            for info in allinfos:
+                attribute = info[0].text
+
+                if attribute in {'Produktname'}:
+                    self.infos['product_name'] = info[1].text
+                elif attribute in {'Switch-Name'}:
+                    self.infos['switch_name'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                elif attribute in {'Seriennummer'}:
+                    self.infos['serial_number'] = info[1].text
+                elif attribute in {'MAC-Adresse'}:
+                    self.infos['mac_adresse'] = info[1].text
+                elif attribute in {'Bootloader-Version'}:
+                    self.infos['bootloader_version'] = info[1].text
+                elif attribute in {'Firmwareversion'}:
+                    self.infos['firmware_version'] = info[1].text
+                elif attribute == "DHCP-Modus":
+                    self.infos['dhcp_mode'] = info[1].xpath('.//input[@name="dhcp_mode"]/@value')[0]
+                elif attribute in {'IP-Adresse'}:
+                    self.infos['ip_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                elif attribute in {'Subnetzmaske'}:
+                    self.infos['subnetmask'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                elif attribute in {'Gateway-Adresse'}:
+                    self.infos['gateway_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+
+            statusRequest = self.session.post('http://' + self.hostname + '/status.htm')
+
+            if 'RedirectToLoginPage' in statusRequest.text:
+                self.error = 'Login failed for ' + self.hostname
+                self.logger.error(self.error)
+                raise ConnectionRefusedError(self.error)
+
+            tree = html.fromstring(statusRequest.content)
+            allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
+            allports = [x.strip() for x in allports] 
+            self.status = [allports[x:x+4] for x in range(0, len(allports), 4)]
+
+            statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
+
+            if 'RedirectToLoginPage' in statisticsRequest.text:
+                self.error = 'Login failed for ' + self.hostname
+                self.logger.error(self.error)
+                raise ConnectionRefusedError(self.error)
+
+            tree = html.fromstring(statisticsRequest.content)
+            allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
+            allports = [int(x, 16) for x in allports]
+            self.statistics = [allports[x:x+3] for x in range(0, len(allports), 3)]
+            self.logger.info('Retrieval for %s done', self.hostname)
+        except requests.exceptions.ConnectionError:
+            self.error = "Connection Error with host " + self.hostname
             self.logger.error(self.error)
-            raise ConnectionRefusedError(self.error)
-        tree = html.fromstring(infoRequest.content)
-        allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
-        allinfos = [allinfos[x:x+2] for x in range(0, len(allinfos), 2)]
-        self.infos = dict()
-        for info in allinfos:
-            attribute = info[0].text
-
-            if attribute in {'Produktname'}:
-                self.infos['product_name'] = info[1].text
-            elif attribute in {'Switch-Name'}:
-                self.infos['switch_name'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-            elif attribute in {'Seriennummer'}:
-                self.infos['serial_number'] = info[1].text
-            elif attribute in {'MAC-Adresse'}:
-                self.infos['mac_adresse'] = info[1].text
-            elif attribute in {'Bootloader-Version'}:
-                self.infos['bootloader_version'] = info[1].text
-            elif attribute in {'Firmwareversion'}:
-                self.infos['firmware_version'] = info[1].text
-            elif attribute == "DHCP-Modus":
-                self.infos['dhcp_mode'] = info[1].xpath('.//input[@name="dhcp_mode"]/@value')[0]
-            elif attribute in {'IP-Adresse'}:
-                self.infos['ip_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-            elif attribute in {'Subnetzmaske'}:
-                self.infos['subnetmask'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-            elif attribute in {'Gateway-Adresse'}:
-                self.infos['gateway_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-
-        statusRequest = self.session.post('http://' + self.hostname + '/status.htm')
-
-        if 'RedirectToLoginPage' in statusRequest.text:
-            self.error = 'Login failed for ' + self.hostname
-            self.logger.error(self.error)
-            raise ConnectionRefusedError(self.error)
-
-        tree = html.fromstring(statusRequest.content)
-        allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
-        allports = [x.strip() for x in allports] 
-        self.status = [allports[x:x+4] for x in range(0, len(allports), 4)]
-
-        statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
-
-        if 'RedirectToLoginPage' in statisticsRequest.text:
-            self.error = 'Login failed for ' + self.hostname
-            self.logger.error(self.error)
-            raise ConnectionRefusedError(self.error)
-
-        tree = html.fromstring(statisticsRequest.content)
-        allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
-        allports = [int(x, 16) for x in allports]
-        self.statistics = [allports[x:x+3] for x in range(0, len(allports), 3)]
-        self.logger.info('Retrieval for %s done', self.hostname)
 
     def writeResult(self):
         result = ""
