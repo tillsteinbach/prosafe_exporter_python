@@ -39,8 +39,9 @@ class ProSafeExporter:
         result = "# Exporter output\n\n"
         for retriever in self.retrievers:
             if retriever.error:
-                result += '# ' + retriever.error + '\n'
-            result += retriever.result + '\n\n'
+                result += '# ERROR: ' + retriever.error + '\n'
+            else:
+                result += retriever.result + '\n\n'
         self.logger.info('Request on endpoint /probe \n%s', result)
         return flask.Response(result, status=200, headers={})
 
@@ -193,18 +194,19 @@ class ProSafeRetrieve:
 
     def writeResult(self):
         result = ""
-        result += 'prosafe_switch_info{hostname="'+self.hostname+'", '
-        for key, value in self.infos.items():
-            result += key + '="' + value + '", '
-        result += '} 1\n'
-        for status in self.status:
-            speedmap = {'Nicht verbunden': 0, '100M': 100, '1000M': 1000}
-            result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
-            result += 'prosafe_max_mtu{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(status[3]) + '\n'
-        for port, statistic in enumerate(self.statistics, start=1):
-            result += 'prosafe_prosafe_receive_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[0]) + '\n'
-            result += 'prosafe_prosafe_transmit_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[1]) + '\n'
-            result += 'prosafe_error_packets_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[2]) + '\n'
+        if self.infos and self.status and self.statistics:
+            result += 'prosafe_switch_info{hostname="'+self.hostname+'", '
+            for key, value in self.infos.items():
+                result += key + '="' + value + '", '
+            result += '} 1\n'
+            for status in self.status:
+                speedmap = {'Nicht verbunden': 0, '100M': 100, '1000M': 1000}
+                result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
+                result += 'prosafe_max_mtu{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(status[3]) + '\n'
+            for port, statistic in enumerate(self.statistics, start=1):
+                result += 'prosafe_prosafe_receive_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[0]) + '\n'
+                result += 'prosafe_prosafe_transmit_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[1]) + '\n'
+                result += 'prosafe_error_packets_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[2]) + '\n'
         self.result = result
 
     @staticmethod
