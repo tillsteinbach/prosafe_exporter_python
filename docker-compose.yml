@@ -1,0 +1,9 @@
+version: '3.3'
+
+services:
+  prosafe_exporter:
+    build: .
+    ports:
+      - 9493:9493
+    volumes:
+            - "./config/prosafe_exporter/:/etc/prosafe_exporter/:ro"
