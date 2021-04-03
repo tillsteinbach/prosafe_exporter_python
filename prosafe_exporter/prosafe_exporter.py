@@ -50,9 +50,10 @@ class ProSafeExporter:
         for retriever in self.retrievers:
             try:
                 retriever.retrieve()
-                retriever.writeResult()
             except (ConnectionRefusedError, requests.exceptions.ConnectionError):
+                self.logger.error('Failed to refrieve for host %s', retriever.hostname)
                 pass
+            retriever.writeResult()
         self.logger.info('Retrieving done')
 
 
@@ -94,6 +95,8 @@ class ProSafeRetrieve:
                 self.logger.info('Already logged in for %s', self.hostname)
                 return
             else:
+                # lets start with a new session
+                self.session = requests.Session()
                 self.logger.info('Have to login again for %s due to inactive session', self.hostname)
         loginPageRequest = self.session.post('http://'+self.hostname+'/login.htm')
         tree = html.fromstring(loginPageRequest.content)
