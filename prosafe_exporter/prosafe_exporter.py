@@ -10,7 +10,9 @@ import logging
 import yaml
 import argparse
 import logging.config
+from multiprocessing import Process, Lock
 
+mutex = Lock()
 
 class ProSafeExporter:
     def __init__(self, retrievers=[], logger=logging.getLogger()):
@@ -126,91 +128,114 @@ class ProSafeRetrieve:
     def retrieve(self):
         self.logger.info('Start retrieval for %s', self.hostname)
 
-        self.error = ""
-        self.infos = None
-        self.status = None
-        self.statistics = None
+        with mutex:
+            self.error = ""
+            self.infos = None
+            self.status = None
+            self.statistics = None
   
-        try:
-            self.__login()
-            infoRequest = self.session.post('http://'+self.hostname+'/switch_info.htm')
+            try:
+                self.__login()
+                infoRequest = self.session.post('http://'+self.hostname+'/switch_info.htm')
 
-            if 'RedirectToLoginPage' in infoRequest.text:
-                self.error = 'Login failed for ' + self.hostname
+                if 'RedirectToLoginPage' in infoRequest.text:
+                    self.error = 'Login failed for ' + self.hostname
+                    self.logger.error(self.error)
+                    raise ConnectionRefusedError(self.error)
+                tree = html.fromstring(infoRequest.content)
+                allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
+                allinfos = [allinfos[x:x+2] for x in range(0, len(allinfos), 2)]
+                self.infos = dict()
+                for info in allinfos:
+                    attribute = info[0].text
+
+                    if attribute in {'Produktname'}:
+                        self.infos['product_name'] = info[1].text
+                    elif attribute in {'Switch-Name'}:
+                        self.infos['switch_name'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                    elif attribute in {'Seriennummer'}:
+                        self.infos['serial_number'] = info[1].text
+                    elif attribute in {'MAC-Adresse'}:
+                        self.infos['mac_adresse'] = info[1].text
+                    elif attribute in {'Bootloader-Version'}:
+                        self.infos['bootloader_version'] = info[1].text
+                    elif attribute in {'Firmwareversion'}:
+                        self.infos['firmware_version'] = info[1].text
+                    elif attribute == "DHCP-Modus":
+                        self.infos['dhcp_mode'] = info[1].xpath('.//input[@name="dhcp_mode"]/@value')[0]
+                    elif attribute in {'IP-Adresse'}:
+                        self.infos['ip_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                    elif attribute in {'Subnetzmaske'}:
+                        self.infos['subnetmask'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                    elif attribute in {'Gateway-Adresse'}:
+                        self.infos['gateway_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+
+                statusRequest = self.session.post('http://' + self.hostname + '/status.htm')
+
+                if 'RedirectToLoginPage' in statusRequest.text:
+                    self.error = 'Login failed for ' + self.hostname
+                    self.logger.error(self.error)
+                    raise ConnectionRefusedError(self.error)
+
+                tree = html.fromstring(statusRequest.content)
+                allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
+                allports = [x.strip() for x in allports] 
+                self.status = [allports[x:x+4] for x in range(0, len(allports), 4)]
+
+                statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
+ 
+                if 'RedirectToLoginPage' in statisticsRequest.text:
+                    self.error = 'Login failed for ' + self.hostname
+                    self.logger.error(self.error)
+                    raise ConnectionRefusedError(self.error)
+
+                tree = html.fromstring(statisticsRequest.content)
+                allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
+                allports = [int(x, 16) for x in allports]
+                self.statistics = [allports[x:x+3] for x in range(0, len(allports), 3)]
+                self.logger.info('Retrieval for %s done', self.hostname)
+            except requests.exceptions.ConnectionError:
+                self.error = "Connection Error with host " + self.hostname
                 self.logger.error(self.error)
-                raise ConnectionRefusedError(self.error)
-            tree = html.fromstring(infoRequest.content)
-            allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
-            allinfos = [allinfos[x:x+2] for x in range(0, len(allinfos), 2)]
-            self.infos = dict()
-            for info in allinfos:
-                attribute = info[0].text
-
-                if attribute in {'Produktname'}:
-                    self.infos['product_name'] = info[1].text
-                elif attribute in {'Switch-Name'}:
-                    self.infos['switch_name'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-                elif attribute in {'Seriennummer'}:
-                    self.infos['serial_number'] = info[1].text
-                elif attribute in {'MAC-Adresse'}:
-                    self.infos['mac_adresse'] = info[1].text
-                elif attribute in {'Bootloader-Version'}:
-                    self.infos['bootloader_version'] = info[1].text
-                elif attribute in {'Firmwareversion'}:
-                    self.infos['firmware_version'] = info[1].text
-                elif attribute == "DHCP-Modus":
-                    self.infos['dhcp_mode'] = info[1].xpath('.//input[@name="dhcp_mode"]/@value')[0]
-                elif attribute in {'IP-Adresse'}:
-                    self.infos['ip_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-                elif attribute in {'Subnetzmaske'}:
-                    self.infos['subnetmask'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-                elif attribute in {'Gateway-Adresse'}:
-                    self.infos['gateway_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-
-            statusRequest = self.session.post('http://' + self.hostname + '/status.htm')
-
-            if 'RedirectToLoginPage' in statusRequest.text:
-                self.error = 'Login failed for ' + self.hostname
-                self.logger.error(self.error)
-                raise ConnectionRefusedError(self.error)
-
-            tree = html.fromstring(statusRequest.content)
-            allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
-            allports = [x.strip() for x in allports] 
-            self.status = [allports[x:x+4] for x in range(0, len(allports), 4)]
-
-            statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
-
-            if 'RedirectToLoginPage' in statisticsRequest.text:
-                self.error = 'Login failed for ' + self.hostname
-                self.logger.error(self.error)
-                raise ConnectionRefusedError(self.error)
-
-            tree = html.fromstring(statisticsRequest.content)
-            allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
-            allports = [int(x, 16) for x in allports]
-            self.statistics = [allports[x:x+3] for x in range(0, len(allports), 3)]
-            self.logger.info('Retrieval for %s done', self.hostname)
-        except requests.exceptions.ConnectionError:
-            self.error = "Connection Error with host " + self.hostname
-            self.logger.error(self.error)
 
     def writeResult(self):
         result = ""
-        if self.infos and self.status and self.statistics:
-            result += 'prosafe_switch_info{hostname="'+self.hostname+'", '
-            for key, value in self.infos.items():
-                result += key + '="' + value + '", '
-            result += '} 1\n'
-            for status in self.status:
-                speedmap = {'Nicht verbunden': 0, '100M': 100, '1000M': 1000}
-                result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
-                result += 'prosafe_max_mtu{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(status[3]) + '\n'
-            for port, statistic in enumerate(self.statistics, start=1):
-                result += 'prosafe_prosafe_receive_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[0]) + '\n'
-                result += 'prosafe_prosafe_transmit_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[1]) + '\n'
-                result += 'prosafe_error_packets_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[2]) + '\n'
-        self.result = result
+        with mutex:
+            if self.infos and self.status and self.statistics:
+                result += '\n# HELP prosafe_switch_info All configuration items collected. This is always 1 and only used to collect labels\n'
+                result += '# TYPE prosafe_switch_info info\n'
+                result += 'prosafe_switch_info{hostname="'+self.hostname+'", '
+                for key, value in self.infos.items():
+                    result += key + '="' + value + '", '
+                result += '} 1\n'
+
+                result += '\n# HELP prosafe_link_speed Link speed of the port in MBit, 0 means unconnected\n'
+                result += '# TYPE prosafe_link_speed info\n'
+                result += '# UNIT prosafe_link_speed megabit per second\n'
+                for status in self.status:
+                    speedmap = {'Nicht verbunden': 0, '100M': 100, '1000M': 1000}
+                    result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
+                result += '\n# HELP prosafe_max_mtu Maximum MTU set for the port in Byte\n'
+                result += '# TYPE prosafe_max_mtu info\n'
+                result += '# UNIT prosafe_max_mtu bytes\n'
+                for status in self.status:
+                    result += 'prosafe_max_mtu{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(status[3]) + '\n'
+                result += '\n# HELP prosafe_prosafe_receive_bytes_total Received bytes at port\n'
+                result += '# TYPE prosafe_prosafe_receive_bytes_total counter\n'
+                result += '# UNIT prosafe_prosafe_receive_bytes_total bytes\n'
+                for port, statistic in enumerate(self.statistics, start=1):
+                    result += 'prosafe_prosafe_receive_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[0]) + '\n'
+                result += '\n# HELP prosafe_prosafe_transmit_bytes_total Transmitted bytes at port\n'
+                result += '# TYPE prosafe_prosafe_transmit_bytes_total counter\n'
+                result += '# UNIT prosafe_prosafe_transmit_bytes_total bytes\n'
+                for port, statistic in enumerate(self.statistics, start=1):
+                    result += 'prosafe_prosafe_transmit_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[1]) + '\n'
+                result += '\n# HELP prosafe_error_packets_total Error bytes at port\n'
+                result += '# TYPE prosafe_error_packets_total counter\n'
+                result += '# UNIT prosafe_error_packets_total bytes\n'
+                for port, statistic in enumerate(self.statistics, start=1):
+                    result += 'prosafe_error_packets_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[2]) + '\n'
+            self.result = result
 
     @staticmethod
     def __merge(str1, str2):
