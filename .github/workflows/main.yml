@@ -30,3 +30,13 @@ jobs:
         with:
           push: true
           tags: tillsteinbach/prosafe_exporter_python:latest
+          cache-from: type=registry,ref=tillsteinbach/prosafe_exporter_python:latest
+          cache-to: type=inline
+      - name: Docker Hub Description
+          uses: peter-evans/dockerhub-description@v2
+          with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
+            repository: tillsteinbach/prosafe_exporter_python
+            short-description: ${{ github.event.repository.description }}
+            readme-filepath: README.md
