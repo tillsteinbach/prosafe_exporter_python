@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Build Images
 
 # Controls when the action will run. 
 on:
@@ -8,6 +8,7 @@ on:
   push:
     branches: [ master ]
     paths:
+     - .github/workflows/build.yml
      - Dockerfile
      - prosafe_exporter/**
 
@@ -32,6 +33,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
           tags: tillsteinbach/prosafe_exporter_python:latest
           cache-from: type=registry,ref=tillsteinbach/prosafe_exporter_python:latest
           cache-to: type=inline
