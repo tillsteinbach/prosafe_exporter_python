@@ -16,7 +16,7 @@ jobs:
       uses: peter-evans/dockerhub-description@v2
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
         repository: tillsteinbach/prosafe_exporter_python
         short-description: ${{ github.event.repository.description }}
         readme-filepath: ./README.md
