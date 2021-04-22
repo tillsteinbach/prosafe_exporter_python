@@ -182,7 +182,10 @@ class ProSafeRetrieve:
                 allports = [x.strip() for x in allports] 
                 self.status = [allports[x:x+4] for x in range(0, len(allports), 4)]
 
-                statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
+                if self.infos['firmware_version'].endswith('GR'):
+                    statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
+                else:
+                    statisticsRequest = self.session.post('http://' + self.hostname + '/portStats.htm')
  
                 if 'RedirectToLoginPage' in statisticsRequest.text:
                     self.error = 'Login failed for ' + self.hostname
@@ -213,7 +216,7 @@ class ProSafeRetrieve:
                 result += '# TYPE prosafe_link_speed gauge\n'
                 result += '# UNIT prosafe_link_speed megabit per second\n'
                 for status in self.status:
-                    speedmap = {'Nicht verbunden': 0, '100M': 100, '1000M': 1000}
+                    speedmap = {'Nicht verbunden': 0, 'No Speed': 0, '100M': 100, '1000M': 1000}
                     result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
                 result += '\n# HELP prosafe_max_mtu Maximum MTU set for the port in Byte\n'
                 result += '# TYPE prosafe_max_mtu gauge\n'
