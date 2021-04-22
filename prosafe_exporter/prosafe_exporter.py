@@ -203,20 +203,20 @@ class ProSafeRetrieve:
         with mutex:
             if self.infos and self.status and self.statistics:
                 result += '\n# HELP prosafe_switch_info All configuration items collected. This is always 1 and only used to collect labels\n'
-                result += '# TYPE prosafe_switch_info info\n'
+                result += '# TYPE prosafe_switch_info gauge\n'
                 result += 'prosafe_switch_info{hostname="'+self.hostname+'", '
                 for key, value in self.infos.items():
                     result += key + '="' + value + '", '
                 result += '} 1\n'
 
                 result += '\n# HELP prosafe_link_speed Link speed of the port in MBit, 0 means unconnected\n'
-                result += '# TYPE prosafe_link_speed info\n'
+                result += '# TYPE prosafe_link_speed gauge\n'
                 result += '# UNIT prosafe_link_speed megabit per second\n'
                 for status in self.status:
                     speedmap = {'Nicht verbunden': 0, '100M': 100, '1000M': 1000}
                     result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
                 result += '\n# HELP prosafe_max_mtu Maximum MTU set for the port in Byte\n'
-                result += '# TYPE prosafe_max_mtu info\n'
+                result += '# TYPE prosafe_max_mtu gauge\n'
                 result += '# UNIT prosafe_max_mtu bytes\n'
                 for status in self.status:
                     result += 'prosafe_max_mtu{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(status[3]) + '\n'
