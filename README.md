@@ -59,10 +59,11 @@ rate(prosafe_transmit_bytes_total{instance="192.168.0.123", port="1"}[1m])
 
 ## Tested Firmware
 - V2.06.14GR
+- V2.06.14EN
 
 ## Known Issues
-- Does not work with english firmware (I would need some information to get it working there too)
-- Does not work with old firmware
+- Does not work with old firmware, you may need to update to a recent one
+- Does not work with Japanese firmware
 
 ## Credits
 Inspired by [dalance/prosafe_exporter](https://github.com/dalance/prosafe_exporter/) that is providing the same functionality using the ProSAFE Plus utility instead of the switches webinterface
