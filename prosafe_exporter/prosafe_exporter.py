@@ -149,25 +149,25 @@ class ProSafeRetrieve:
                 for info in allinfos:
                     attribute = info[0].text
 
-                    if attribute in {'Produktname'}:
+                    if attribute in {'Produktname', 'Product Name'}:
                         self.infos['product_name'] = info[1].text
-                    elif attribute in {'Switch-Name'}:
+                    elif attribute in {'Switch-Name', 'Switch Name'}:
                         self.infos['switch_name'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-                    elif attribute in {'Seriennummer'}:
+                    elif attribute in {'Seriennummer', 'Serial Number'}:
                         self.infos['serial_number'] = info[1].text
-                    elif attribute in {'MAC-Adresse'}:
+                    elif attribute in {'MAC-Adresse', 'MAC Address'}:
                         self.infos['mac_adresse'] = info[1].text
                     elif attribute in {'Bootloader-Version'}:
                         self.infos['bootloader_version'] = info[1].text
-                    elif attribute in {'Firmwareversion'}:
+                    elif attribute in {'Firmwareversion', 'Firmware Version'}:
                         self.infos['firmware_version'] = info[1].text
-                    elif attribute == "DHCP-Modus":
+                    elif attribute in {'DHCP-Modus', 'DHCP Mode'}:
                         self.infos['dhcp_mode'] = info[1].xpath('.//input[@name="dhcp_mode"]/@value')[0]
-                    elif attribute in {'IP-Adresse'}:
+                    elif attribute in {'IP-Adresse', 'IP Address'}:
                         self.infos['ip_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-                    elif attribute in {'Subnetzmaske'}:
+                    elif attribute in {'Subnetzmaske', 'Subnet Mask'}:
                         self.infos['subnetmask'] = info[1].xpath('.//input[@type="text"]/@value')[0]
-                    elif attribute in {'Gateway-Adresse'}:
+                    elif attribute in {'Gateway-Adresse', 'Gateway Address'}:
                         self.infos['gateway_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
 
                 statusRequest = self.session.post('http://' + self.hostname + '/status.htm')
