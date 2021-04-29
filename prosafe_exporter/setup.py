@@ -5,7 +5,7 @@ setup(
     version='0.1.0',
     description='Prometheus metrics exporter for NETGEAR switches of the Smart Managed Plus series.',
     author='Till Steinbach',
-    install_requires=['Flask==1.1.2', 'lxml==4.5.0', 'requests==2.23.0', 'PyYAML==3.13'],
+    install_requires=['Flask>=1.1.2', 'lxml>=4.6.3', 'requests>=2.23.0', 'PyYAML>=4.6.3'],
     entry_points={
         'console_scripts': [
             'prosafe_exporter = prosafe_exporter.prosafe_exporter:main',
