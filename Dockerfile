@@ -1,13 +1,12 @@
 FROM python:3.6.1-alpine
 
-COPY prosafe_exporter/requirements.txt /tmp/
+ENV CONFIG=/etc/prosafe_exporter/config.yml
 
-RUN apk add --no-cache --virtual .build-deps gcc libc-dev libxslt-dev && \
+COPY prosafe_exporter prosafe_exporter
+
+RUN apk add --no-cache --virtual .build-deps gcc libc-dev libxml2-dev libxslt-dev && \
     apk add --no-cache libxslt && \
-    pip install -r /tmp/requirements.txt && \
+    pip install ./prosafe_exporter/ && \
     apk del .build-deps
 
-WORKDIR /prosafe_exporter
-COPY /prosafe_exporter/prosafe_exporter.py .
-
-CMD ["python","prosafe_exporter.py", "/etc/prosafe_exporter/config.yml"]
+CMD ["prosafe_exporter", "$CONFIG"]
