@@ -9,4 +9,4 @@ RUN apk add --no-cache --virtual .build-deps gcc libc-dev libxml2-dev libxslt-de
     pip install ./prosafe_exporter/ && \
     apk del .build-deps
 
-CMD ["prosafe_exporter", "${CONFIG}"]
+CMD prosafe_exporter ${CONFIG}
