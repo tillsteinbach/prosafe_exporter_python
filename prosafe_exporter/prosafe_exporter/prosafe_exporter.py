@@ -316,7 +316,7 @@ def main():
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
     args = parser.parse_args()
 
-    config = yaml.load(args.config)
+    config = yaml.load(args.config, Loader=yaml.SafeLoader)
 
     logger = logging.getLogger('ProSafe_Exporter')
     logger.setLevel(logging.INFO)
