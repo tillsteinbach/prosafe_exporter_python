@@ -1,3 +1,6 @@
+#!/usr/local/bin/python3
+
+import string
 import flask
 import time
 import requests
@@ -14,6 +17,8 @@ from multiprocessing import Process, Lock
 
 mutex = Lock()
 
+speedmap = {'Nicht verbunden': 0, 'No Speed': 0, '100M': 100, '1000M': 1000}
+
 class ProSafeExporter:
     def __init__(self, retrievers=[], logger=logging.getLogger()):
         self.logger = logger
@@ -21,6 +26,7 @@ class ProSafeExporter:
 
         self.app = flask.Flask('ProSafeExporter')
         self.app.add_url_rule('/probe', '/probe', self.__probe, methods=['POST', 'GET'])
+        self.app.add_url_rule('/metrics', '/metrics', self.__probe, methods=['POST', 'GET'])
 
     def run(self, host="0.0.0.0", port=9493, retrieveInterval=20.0, debug=False):
         if not debug:
@@ -60,8 +66,9 @@ class ProSafeExporter:
 
 
 class ProSafeRetrieve:
-    def __init__(self, hostname, password, cookiefile=None, logger=logging.getLogger()):
+    def __init__(self, hostname, password, cookiefile=None, logger=logging.getLogger(), retries=10):
         self.logger = logger
+        self.retries = retries
         self.hostname = hostname
         self.password = password
         self.session = requests.Session()
@@ -170,33 +177,80 @@ class ProSafeRetrieve:
                     elif attribute in {'Gateway-Adresse', 'Gateway Address'}:
                         self.infos['gateway_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
 
-                statusRequest = self.session.post('http://' + self.hostname + '/status.htm')
+                retries = self.retries
+                while retries > 0:
+                    statusRequest = self.session.post('http://' + self.hostname + '/status.htm')
 
-                if 'RedirectToLoginPage' in statusRequest.text:
-                    self.error = 'Login failed for ' + self.hostname
+                    if 'RedirectToLoginPage' in statusRequest.text:
+                        self.error = 'Login failed for ' + self.hostname
+                        self.logger.error(self.error)
+                        raise ConnectionRefusedError(self.error)
+
+                    tree = html.fromstring(statusRequest.content)
+                    allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
+                    allports = [x.strip() for x in allports] 
+                    self.status = [allports[x:x+4] for x in range(0, len(allports), 4)]
+
+                    noProblem = True
+                    for num, portStatus in enumerate(self.status, start=1):
+                        if len(portStatus) == 4:
+                            # Check that number matches location in list
+                            portCheck = portStatus[0].isnumeric() and int(portStatus[0])==num
+                            stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
+                            speedCheck = portStatus[2] in speedmap.keys()
+                            #Conscider MTU always below 10k
+                            mtuCheck = portStatus[3].isnumeric() and int(portStatus[3]) < 10000
+
+                            noProblem = noProblem and portCheck and stateCheck and speedCheck and mtuCheck
+                        else:
+                            noProblem = False
+                    if noProblem:
+                        break
+                    self.logger.info('Problem while retrieving status for ' + self.hostname + ' this can happen when there is much traffic on the device')
+                    retries -= 1
+                if retries == 0:
+                    self.error = 'Could not retrieve correct status for ' + self.hostname + ' after 10 retries. This can happen when there is much traffic on the device'
                     self.logger.error(self.error)
-                    raise ConnectionRefusedError(self.error)
+                    return
 
-                tree = html.fromstring(statusRequest.content)
-                allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
-                allports = [x.strip() for x in allports] 
-                self.status = [allports[x:x+4] for x in range(0, len(allports), 4)]
 
-                if self.infos['firmware_version'].endswith('GR'):
-                    statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
-                else:
-                    statisticsRequest = self.session.post('http://' + self.hostname + '/portStats.htm')
- 
-                if 'RedirectToLoginPage' in statisticsRequest.text:
-                    self.error = 'Login failed for ' + self.hostname
+                retries = self.retries
+                while retries > 0:
+                    if self.infos['firmware_version'].endswith('GR'):
+                        statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
+                    else:
+                        statisticsRequest = self.session.post('http://' + self.hostname + '/portStats.htm')
+    
+                    if 'RedirectToLoginPage' in statisticsRequest.text:
+                        self.error = 'Login failed for ' + self.hostname
+                        self.logger.error(self.error)
+                        raise ConnectionRefusedError(self.error)
+
+                    tree = html.fromstring(statisticsRequest.content)
+                    allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
+                    allports = [int(x, 16) for x in allports]
+                    self.statistics = [allports[x:x+3] for x in range(0, len(allports), 3)]
+                    self.logger.info('Retrieval for %s done', self.hostname)
+
+                    noProblem = True
+                    for num, portStatistics in enumerate(self.statistics, start=1):
+                        if len(portStatistics) != 3:
+                            noProblem = False
+                    if noProblem:
+                        break
+                    self.logger.info('Problem while retrieving statistics for ' + self.hostname + ' this can happen when there is much traffic on the device')
+                    retries -= 1
+                if retries == 0:
+                    self.error = 'Could not retrieve correct statistics for ' + self.hostname + ' after 10 retries.  This can happen when there is much traffic on the device'
                     self.logger.error(self.error)
-                    raise ConnectionRefusedError(self.error)
+                    return
+                
+                # Check plausibility
+                if len(self.status) != len(self.statistics):
+                    self.error = 'Result is not  plausible for ' + self.hostname + ' Different number of ports for statistics and status. This can happen when there is much traffic on the device'
+                    self.logger.error(self.error)
+                    return
 
-                tree = html.fromstring(statisticsRequest.content)
-                allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
-                allports = [int(x, 16) for x in allports]
-                self.statistics = [allports[x:x+3] for x in range(0, len(allports), 3)]
-                self.logger.info('Retrieval for %s done', self.hostname)
             except requests.exceptions.ConnectionError:
                 self.error = "Connection Error with host " + self.hostname
                 self.logger.error(self.error)
@@ -216,7 +270,6 @@ class ProSafeRetrieve:
                 result += '# TYPE prosafe_link_speed gauge\n'
                 result += '# UNIT prosafe_link_speed megabit per second\n'
                 for status in self.status:
-                    speedmap = {'Nicht verbunden': 0, 'No Speed': 0, '100M': 100, '1000M': 1000}
                     result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
                 result += '\n# HELP prosafe_max_mtu Maximum MTU set for the port in Byte\n'
                 result += '# TYPE prosafe_max_mtu gauge\n'
@@ -292,6 +345,8 @@ def main():
         config['global']['port'] = 9493
     if 'retrieve_interval' not in config['global']:
         config['global']['retrieve_interval'] = 20.0
+    if 'retries' not in config['global']:
+        config['global']['retries'] = 10
 
     if 'switches' not in config:
         logger.error('You have to define switches in the switches: section of your configuration')
@@ -305,7 +360,7 @@ def main():
         if 'password' not in switch:
             logger.error('You have to define the password for the switch, ignoring this switch entry')
             continue
-        retrievers.append(ProSafeRetrieve(hostname=switch['hostname'], password=switch['password'], logger=logger))
+        retrievers.append(ProSafeRetrieve(hostname=switch['hostname'], password=switch['password'], logger=logger, retries=config['global']['retries']))
     exporter = ProSafeExporter(retrievers=retrievers, logger=logger)
     exporter.run(host=config['global']['host'], port=config['global']['port'], retrieveInterval=config['global']['retrieve_interval'], debug=args.verbose)
 
