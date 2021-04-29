@@ -31,7 +31,7 @@ jobs:
         with:
           images: |
             tillsteinbach/prosafe_exporter_python
-            ghcr.io/tillsteinbach/prosafe_exporter_python/prosafe_exporter_python
+            ghcr.io/tillsteinbach/prosafe_exporter_python
           tags: |
             type=edge,
             type=semver,pattern={{version}}
