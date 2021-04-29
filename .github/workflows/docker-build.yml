@@ -10,7 +10,7 @@ on:
     tags:
       - "v*"
     paths:
-     - .github/workflows/build.yml
+     - .github/workflows/docker-build.yml
      - Dockerfile
      - prosafe_exporter/**
 
