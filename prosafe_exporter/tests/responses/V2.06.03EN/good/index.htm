@@ -1,0 +1,88 @@
+
+<!DOCTYPE HTML>
+<html class="html_home">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<link rel="stylesheet" href="style.css?v=1.0" type="text/css"/>
+<title>NETGEAR ProSAFE Plus Switch</title>
+<script  src="frame.js?v=1.0" type="text/javascript"></script>
+<script  src="function.js?v=1.0" type="text/javascript"></script>
+</head>
+<body class="homebody" onload="init()">
+<table class="tableStyle" height="100%" id="tableStyle">
+<tr>
+<td colspan="2" class="tdStyle"><div width="100%"><div>
+<div class="logoNetGear"><a href="http://www.netgear.com/" target="_blank"></a></div>
+<div class="imgContentVisual"></div>
+</div></div></td>
+</tr>
+<tr>
+<td class="tdStyle"><div class="fontProLg">GS108PEv3 - 8-Port Gigabit ProSAFE Plus Switch with PoE</div></td>
+<td class="rightAlign tdStyle"><a id="logout" href="logout.cgi" target="_top"><img src="icon_logout.png" border='0'></a></td>
+</tr>
+<tr>
+<td class="headsTab tdStyle" colspan="2"><script>drawHeadsTab()</script></td>
+</tr>
+<tr><td style="height:1px;padding:0;"></td></tr>
+<tr>
+<td colspan="2" class="backgroundBlue tdStyle" width=100% name='secBar'>
+<table><tr><td class="tdStyle">
+<div width=40% border="0" cellpadding="0" cellspacing="0">
+    <div>
+        	<div id="subTubs" width=100% style="display:inline;">
+        	<script>drawSecdLvlHeadsTab();</script>
+        	</div>
+    </div>
+</div>
+</td></tr>
+</table>
+</td>
+</tr>
+<tr style="height:31px;">
+<td colspan="2" id="ButtonsDiv" style="height:31px;" class="rightAlign tdStyle"></td>
+</tr>
+<tr height="100%">
+<td colspan='2' valign="top" class="tdStyle" width="100%">
+<table class="tableStyle" width="100%" height="100%">
+<tbody>
+     <tr>
+     <td class="topVertical" id="treeOutLine"><table class="tableStyle" style="display: table-row;" class="thardNavContainer" id="Tree" border="0" cellpadding="0" cellspacing="0">
+     <tr>
+     <td class="sideLinkBorder" id="treeFrame"><script>getSubTree('Management');</script></td>
+     </tr>
+     </table>
+     </td>
+     <td width="88%" id="frameId" style="padding:7px 0pc 0px 8px;"><iframe src="switch_info.htm" id="maincontent" name="maincontent" frameborder="no" height="100%" width="100%"></iframe></td>
+     </tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr><td colspan="2" class="footer tdStyle"><span class="rights">&copy; NETGEAR, Inc. All rights reserved.</span></td></tr>
+</table>
+<div id="popUp_overlay" style="display:none; background-color: rgb(255, 2555, 255); opacity: 0.75;"></div>
+<div id="popUp" class="popUp" style="display:none;">
+	<div id="popUp_title" class="popUp_title">
+		<div id="popUp_titleText" class="popUp_titleText">
+			<span id="popUp_text" class="popUp_text">Alert</span>
+		</div>
+		<div id="popUp_titleBtn" class="popUp_titleBtn">
+			<div id="closeBtn" class="closeBtn" style="display:none;" onmousedown="event.stopPropagation && event.stopPropagation(); event.cancelBubble = true; return false;" onclick="return false;"></div>
+		</div>
+	</div>
+	<div id="popUp_body" class="popUp_body">
+		<p id="popUp_head" class="popUp_head">&nbsp;</p>
+		<p id="popUp_bodyText" class="popUp_bodyText">&nbsp;</p>
+	</div>
+	<div id="comfirmBtn">
+		<input type="button" id='btn_OK' class='btn_OK' onclick="" value="OK"/>
+	</div>
+	<div id="popUp_footer" class="popUp_footer"></div>
+</div>
+<iframe width=0  height=0 frameborder="no" border="0" src="registration_check.htm">
+</iframe>
+<script>
+</script>
+</body>
+</html>

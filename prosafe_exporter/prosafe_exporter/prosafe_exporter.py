@@ -104,7 +104,7 @@ class ProSafeRetrieve:
 
     def __login(self):
         if self.cookie:
-            indexPageRequest = self.session.post(
+            indexPageRequest = self.session.get(
                 'http://'+self.hostname+'/index.htm')
             if 'RedirectToLoginPage' not in indexPageRequest.text:
                 self.logger.info('Already logged in for %s', self.hostname)
@@ -114,8 +114,10 @@ class ProSafeRetrieve:
                 self.session = requests.Session()
                 self.logger.info(
                     'Have to login again for %s due to inactive session', self.hostname)
-        loginPageRequest = self.session.post(
+        loginPageRequest = self.session.get(
             'http://'+self.hostname+'/login.htm')
+        loginPageRequest.raise_for_status()
+
         tree = html.fromstring(loginPageRequest.content)
         rand = tree.xpath('//input[@id="rand"]/@value[1]')
         if len(rand) != 1:
@@ -129,6 +131,8 @@ class ProSafeRetrieve:
             }
             loginRequest = self.session.post(
                 'http://'+self.hostname+'/login.cgi', data=payload)
+            loginRequest.raise_for_status()
+
             tree = html.fromstring(loginRequest.content)
             errorMsg = tree.xpath('//input[@id="err_msg"]/@value[1]')
             if errorMsg and errorMsg[0]:
@@ -148,6 +152,8 @@ class ProSafeRetrieve:
 
             loginRequest = self.session.post(
                 'http://'+self.hostname+'/login.cgi', data=payload)
+            loginRequest.raise_for_status()
+
             tree = html.fromstring(loginRequest.content)
             errorMsg = tree.xpath('//input[@id="err_msg"]/@value[1]')
             if errorMsg and errorMsg[0]:
@@ -167,8 +173,9 @@ class ProSafeRetrieve:
 
             try:
                 self.__login()
-                infoRequest = self.session.post(
+                infoRequest = self.session.get(
                     'http://'+self.hostname+'/switch_info.htm')
+                infoRequest.raise_for_status()
 
                 if 'RedirectToLoginPage' in infoRequest.text:
                     self.error = 'Login failed for ' + self.hostname
@@ -211,8 +218,9 @@ class ProSafeRetrieve:
 
                 retries = self.retries
                 while retries > 0:
-                    statusRequest = self.session.post(
+                    statusRequest = self.session.get(
                         'http://' + self.hostname + '/status.htm')
+                    statusRequest.raise_for_status()
 
                     if 'RedirectToLoginPage' in statusRequest.text:
                         self.error = 'Login failed for ' + self.hostname
@@ -275,12 +283,14 @@ class ProSafeRetrieve:
                 retries = self.retries
                 while retries > 0:
                     try:
-                        statisticsRequest = self.session.post(
+                        statisticsRequest = self.session.get(
                             'http://' + self.hostname + '/port_statistics.htm')
+                        statisticsRequest.raise_for_status()
                     # Retry on different URL
-                    except requests.exceptions.ConnectionError:
-                        statisticsRequest = self.session.post(
+                    except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) :
+                        statisticsRequest = self.session.get(
                             'http://' + self.hostname + '/portStats.htm')
+                        statisticsRequest.raise_for_status()
 
                     if 'RedirectToLoginPage' in statisticsRequest.text:
                         self.error = 'Login failed for ' + self.hostname

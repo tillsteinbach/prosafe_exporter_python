@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='prosafe_exporter',
-    packages=find_packages(include=['prosafe_exporter']),
+    packages=['prosafe_exporter'],
     version='0.1.0',
     description='Prometheus metrics exporter for NETGEAR switches of the Smart Managed Plus series.',
     author='Till Steinbach',
@@ -24,4 +24,6 @@ setup(
         'Topic :: System :: Networking :: Monitoring ',
       ],
     python_requires='>=3.6',
+    setup_requires=['pytest-runner', 'flake8'],
+    tests_require=['pytest', 'pytest-httpserver'],
 )
