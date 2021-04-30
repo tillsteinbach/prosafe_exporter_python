@@ -1,6 +1,5 @@
 #!/usr/local/bin/python3
 
-import string
 import flask
 import time
 import requests
@@ -25,7 +24,8 @@ class ProSafeExporter:
         self.retrievers = retrievers
 
         self.app = flask.Flask('ProSafeExporter')
-        self.app.add_url_rule('/<path>', '/<path:path>', self.__probe, methods=['POST', 'GET'])
+        self.app.add_url_rule('/<path>', '/<path:path>',
+                              self.__probe, methods=['POST', 'GET'])
         self.app.add_url_rule('/', '/', self.__probe, methods=['POST', 'GET'])
 
     def run(self, host="0.0.0.0", port=9493, retrieveInterval=20.0, debug=False):
@@ -34,10 +34,12 @@ class ProSafeExporter:
             log = logging.getLogger('werkzeug')
             log.disabled = True
 
-        webthread = threading.Thread(target=self.app.run, kwargs={'debug': debug, 'use_reloader': False, 'host': host, 'port': port})
+        webthread = threading.Thread(target=self.app.run, kwargs={
+                                     'debug': debug, 'use_reloader': False, 'host': host, 'port': port})
         webthread.daemon = True
         webthread.start()
-        self.logger.info('ProSafeExporter is listening on %s:%d for request on /probe endpoint', host, port)
+        self.logger.info(
+            'ProSafeExporter is listening on %s:%d for request on /probe endpoint', host, port)
 
         while True:
             self.__retrieve()
@@ -59,7 +61,8 @@ class ProSafeExporter:
             try:
                 retriever.retrieve()
             except (ConnectionRefusedError, requests.exceptions.ConnectionError):
-                self.logger.error('Failed to refrieve for host %s', retriever.hostname)
+                self.logger.error(
+                    'Failed to refrieve for host %s', retriever.hostname)
                 pass
             retriever.writeResult()
         self.logger.info('Retrieving done')
@@ -79,7 +82,8 @@ class ProSafeRetrieve:
         self.statistics = None
         self.result = ""
         self.error = ""
-        self.logger.info('Created retriever for host %s using cookiefile %s', self.hostname, self.cookiefile)
+        self.logger.info(
+            'Created retriever for host %s using cookiefile %s', self.hostname, self.cookiefile)
 
         if self.cookiefile:
             if os.path.isfile(self.cookiefile):
@@ -94,34 +98,42 @@ class ProSafeRetrieve:
     def __del__(self):
         if self.cookiefile:
             with open(self.cookiefile, 'w') as f:
-                json.dump(requests.utils.dict_from_cookiejar(self.session.cookies), f)
+                json.dump(requests.utils.dict_from_cookiejar(
+                    self.session.cookies), f)
                 self.logger.info('Writing cookiefile %s', self.cookiefile)
 
     def __login(self):
         if self.cookie:
-            indexPageRequest = self.session.post('http://'+self.hostname+'/index.htm')
+            indexPageRequest = self.session.post(
+                'http://'+self.hostname+'/index.htm')
             if 'RedirectToLoginPage' not in indexPageRequest.text:
                 self.logger.info('Already logged in for %s', self.hostname)
                 return
             else:
                 # lets start with a new session
                 self.session = requests.Session()
-                self.logger.info('Have to login again for %s due to inactive session', self.hostname)
-        loginPageRequest = self.session.post('http://'+self.hostname+'/login.htm')
+                self.logger.info(
+                    'Have to login again for %s due to inactive session', self.hostname)
+        loginPageRequest = self.session.post(
+            'http://'+self.hostname+'/login.htm')
         tree = html.fromstring(loginPageRequest.content)
         rand = tree.xpath('//input[@id="rand"]/@value[1]')
         if len(rand) != 1:
             # looks like an old firmware without seed
-            self.logger.warning('Your switch %s uses an old firmware which sends your password unencrypted while retrieving data. Please conscider updating', self.hostname)
+            self.logger.warning(
+                'Your switch %s uses an old firmware which sends your password unencrypted while retrieving data.'
+                ' Please conscider updating', self.hostname)
 
             payload = {
                 'password': self.password,
             }
-            loginRequest = self.session.post('http://'+self.hostname+'/login.cgi', data=payload)
+            loginRequest = self.session.post(
+                'http://'+self.hostname+'/login.cgi', data=payload)
             tree = html.fromstring(loginRequest.content)
             errorMsg = tree.xpath('//input[@id="err_msg"]/@value[1]')
             if errorMsg and errorMsg[0]:
-                self.error = 'I could not login at the switch ' + self.hostname + ' due to: ' + errorMsg[0]
+                self.error = 'I could not login at the switch ' + \
+                    self.hostname + ' due to: ' + errorMsg[0]
                 self.logger.error(self.error)
                 raise ConnectionRefusedError(self.error)
         else:
@@ -134,11 +146,13 @@ class ProSafeRetrieve:
                 'password': password.hexdigest(),
             }
 
-            loginRequest = self.session.post('http://'+self.hostname+'/login.cgi', data=payload)
+            loginRequest = self.session.post(
+                'http://'+self.hostname+'/login.cgi', data=payload)
             tree = html.fromstring(loginRequest.content)
             errorMsg = tree.xpath('//input[@id="err_msg"]/@value[1]')
             if errorMsg and errorMsg[0]:
-                self.error = 'I could not login at the switch ' + self.hostname + ' due to: ' + errorMsg[0]
+                self.error = 'I could not login at the switch ' + \
+                    self.hostname + ' due to: ' + errorMsg[0]
                 self.logger.error(self.error)
                 raise ConnectionRefusedError(self.error)
 
@@ -153,15 +167,18 @@ class ProSafeRetrieve:
 
             try:
                 self.__login()
-                infoRequest = self.session.post('http://'+self.hostname+'/switch_info.htm')
+                infoRequest = self.session.post(
+                    'http://'+self.hostname+'/switch_info.htm')
 
                 if 'RedirectToLoginPage' in infoRequest.text:
                     self.error = 'Login failed for ' + self.hostname
                     self.logger.error(self.error)
                     raise ConnectionRefusedError(self.error)
                 tree = html.fromstring(infoRequest.content)
-                allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
-                allinfos = [allinfos[x:x+2] for x in range(0, len(allinfos), 2)]
+                allinfos = tree.xpath(
+                    '//table[@class="tableStyle"]//td[@nowrap=""]')
+                allinfos = [allinfos[x:x+2]
+                            for x in range(0, len(allinfos), 2)]
                 self.infos = dict()
                 for info in allinfos:
                     attribute = info[0].text
@@ -169,7 +186,8 @@ class ProSafeRetrieve:
                     if attribute in {'Produktname', 'Product Name'}:
                         self.infos['product_name'] = info[1].text
                     elif attribute in {'Switch-Name', 'Switch Name'}:
-                        self.infos['switch_name'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                        self.infos['switch_name'] = info[1].xpath(
+                            './/input[@type="text"]/@value')[0]
                     elif attribute in {'Seriennummer', 'Serial Number'}:
                         self.infos['serial_number'] = info[1].text
                     elif attribute in {'MAC-Adresse', 'MAC Address'}:
@@ -179,17 +197,22 @@ class ProSafeRetrieve:
                     elif attribute in {'Firmwareversion', 'Firmware Version'}:
                         self.infos['firmware_version'] = info[1].text
                     elif attribute in {'DHCP-Modus', 'DHCP Mode'}:
-                        self.infos['dhcp_mode'] = info[1].xpath('.//input[@name="dhcp_mode"]/@value')[0]
+                        self.infos['dhcp_mode'] = info[1].xpath(
+                            './/input[@name="dhcp_mode"]/@value')[0]
                     elif attribute in {'IP-Adresse', 'IP Address'}:
-                        self.infos['ip_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                        self.infos['ip_adresse'] = info[1].xpath(
+                            './/input[@type="text"]/@value')[0]
                     elif attribute in {'Subnetzmaske', 'Subnet Mask'}:
-                        self.infos['subnetmask'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                        self.infos['subnetmask'] = info[1].xpath(
+                            './/input[@type="text"]/@value')[0]
                     elif attribute in {'Gateway-Adresse', 'Gateway Address'}:
-                        self.infos['gateway_adresse'] = info[1].xpath('.//input[@type="text"]/@value')[0]
+                        self.infos['gateway_adresse'] = info[1].xpath(
+                            './/input[@type="text"]/@value')[0]
 
                 retries = self.retries
                 while retries > 0:
-                    statusRequest = self.session.post('http://' + self.hostname + '/status.htm')
+                    statusRequest = self.session.post(
+                        'http://' + self.hostname + '/status.htm')
 
                     if 'RedirectToLoginPage' in statusRequest.text:
                         self.error = 'Login failed for ' + self.hostname
@@ -197,19 +220,24 @@ class ProSafeRetrieve:
                         raise ConnectionRefusedError(self.error)
 
                     tree = html.fromstring(statusRequest.content)
-                    allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
+                    allports = tree.xpath(
+                        '//tr[@class="portID"]/td[@sel="text"]/text()')
                     allports = [x.strip() for x in allports]
-                    self.status = [allports[x:x+4] for x in range(0, len(allports), 4)]
+                    self.status = [allports[x:x+4]
+                                   for x in range(0, len(allports), 4)]
 
                     noProblem = True
                     for num, portStatus in enumerate(self.status, start=1):
                         if len(portStatus) == 4:
                             # Check that number matches location in list
-                            portCheck = portStatus[0].isnumeric() and int(portStatus[0]) == num
-                            stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
+                            portCheck = portStatus[0].isnumeric() and int(
+                                portStatus[0]) == num
+                            stateCheck = portStatus[1] in [
+                                'Aktiv', 'Inaktiv', 'Up', 'Down']
                             speedCheck = portStatus[2] in speedmap.keys()
                             # Conscider MTU always below 10k
-                            mtuCheck = portStatus[3].isnumeric() and int(portStatus[3]) < 10000
+                            mtuCheck = portStatus[3].isnumeric() and int(
+                                portStatus[3]) < 10000
 
                             noProblem = noProblem and portCheck and stateCheck and speedCheck and mtuCheck
                         else:
@@ -217,13 +245,16 @@ class ProSafeRetrieve:
                     if noProblem:
                         break
                     # This might be a firmware that does not expose mtu. Try again with 3 fields:
-                    self.status = [allports[x:x+3] for x in range(0, len(allports), 3)]
+                    self.status = [allports[x:x+3]
+                                   for x in range(0, len(allports), 3)]
                     noProblem = True
                     for num, portStatus in enumerate(self.status, start=1):
                         if len(portStatus) == 3:
                             # Check that number matches location in list
-                            portCheck = portStatus[0].isnumeric() and int(portStatus[0]) == num
-                            stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
+                            portCheck = portStatus[0].isnumeric() and int(
+                                portStatus[0]) == num
+                            stateCheck = portStatus[1] in [
+                                'Aktiv', 'Inaktiv', 'Up', 'Down']
                             speedCheck = portStatus[2] in speedmap.keys()
 
                             noProblem = noProblem and portCheck and stateCheck and speedCheck
@@ -231,20 +262,25 @@ class ProSafeRetrieve:
                             noProblem = False
                     if noProblem:
                         break
-                    self.logger.info('Problem while retrieving status for ' + self.hostname + ' this can happen when there is much traffic on the device')
+                    self.logger.info('Problem while retrieving status for ' + self.hostname +
+                                     ' this can happen when there is much traffic on the device')
                     retries -= 1
                 if retries == 0:
-                    self.error = 'Could not retrieve correct status for ' + self.hostname + ' after '+self.retries+' retries. This can happen when there is much traffic on the device, but it is more likely that the firmware is not understood'
+                    self.error = 'Could not retrieve correct status for ' + self.hostname + ' after '+self.retries + \
+                        ' retries. This can happen when there is much traffic on the device, but it is more likely' \
+                        ' that the firmware is not understood'
                     self.logger.error(self.error)
                     return
 
                 retries = self.retries
                 while retries > 0:
                     try:
-                        statisticsRequest = self.session.post('http://' + self.hostname + '/port_statistics.htm')
+                        statisticsRequest = self.session.post(
+                            'http://' + self.hostname + '/port_statistics.htm')
                     # Retry on different URL
                     except requests.exceptions.ConnectionError:
-                        statisticsRequest = self.session.post('http://' + self.hostname + '/portStats.htm')
+                        statisticsRequest = self.session.post(
+                            'http://' + self.hostname + '/portStats.htm')
 
                     if 'RedirectToLoginPage' in statisticsRequest.text:
                         self.error = 'Login failed for ' + self.hostname
@@ -252,15 +288,18 @@ class ProSafeRetrieve:
                         raise ConnectionRefusedError(self.error)
 
                     tree = html.fromstring(statisticsRequest.content)
-                    allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
+                    allports = tree.xpath(
+                        '//tr[@class="portID"]/input[@type="hidden"]/@value')
                     allports = [int(x, 16) for x in allports]
                     # Some older firmware does not use the input fields
                     if len(allports) == 0:
-                        allports = tree.xpath('//tr[@class="portID"]/td[@class="def" and @sel="text"]/text()')
+                        allports = tree.xpath(
+                            '//tr[@class="portID"]/td[@class="def" and @sel="text"]/text()')
                         # In this case the value is not in hex
                         allports = [int(x) for x in allports]
 
-                    self.statistics = [allports[x:x+3] for x in range(0, len(allports), 3)]
+                    self.statistics = [allports[x:x+3]
+                                       for x in range(0, len(allports), 3)]
                     self.logger.info('Retrieval for %s done', self.hostname)
 
                     noProblem = True
@@ -269,16 +308,20 @@ class ProSafeRetrieve:
                             noProblem = False
                     if noProblem:
                         break
-                    self.logger.info('Problem while retrieving statistics for ' + self.hostname + ' this can happen when there is much traffic on the device')
+                    self.logger.info('Problem while retrieving statistics for ' + self.hostname +
+                                     ' this can happen when there is much traffic on the device')
                     retries -= 1
                 if retries == 0:
-                    self.error = 'Could not retrieve correct statistics for ' + self.hostname + ' after 10 retries.  This can happen when there is much traffic on the device'
+                    self.error = 'Could not retrieve correct statistics for ' + self.hostname + \
+                        ' after 10 retries.  This can happen when there is much traffic on the device'
                     self.logger.error(self.error)
                     return
 
                 # Check plausibility
                 if len(self.status) != len(self.statistics) or len(self.status) == 0:
-                    self.error = 'Result is not  plausible for ' + self.hostname + ' Different number of ports for statistics and status. This can happen when there is much traffic on the device'
+                    self.error = 'Result is not  plausible for ' + self.hostname + \
+                        ' Different number of ports for statistics and status. This can happen when there is much' \
+                        ' traffic on the device'
                     self.logger.error(self.error)
                     return
 
@@ -290,7 +333,8 @@ class ProSafeRetrieve:
         result = ""
         with mutex:
             if self.infos and self.status and self.statistics:
-                result += '\n# HELP prosafe_switch_info All configuration items collected. This is always 1 and only used to collect labels\n'
+                result += '\n# HELP prosafe_switch_info All configuration items collected. This is always 1 and only' \
+                    ' used to collect labels\n'
                 result += '# TYPE prosafe_switch_info gauge\n'
                 result += 'prosafe_switch_info{hostname="'+self.hostname+'", '
                 for key, value in self.infos.items():
@@ -302,31 +346,38 @@ class ProSafeRetrieve:
                 result += '# UNIT prosafe_link_speed megabit per second\n'
                 for status in self.status:
                     if len(status) >= 3:
-                        result += 'prosafe_link_speed{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(speedmap[status[2]]) + '\n'
+                        result += 'prosafe_link_speed{hostname="' + self.hostname + \
+                            '", port="' + status[0]+'"} ' + \
+                            str(speedmap[status[2]]) + '\n'
                 result += '\n# HELP prosafe_max_mtu Maximum MTU set for the port in Byte\n'
                 result += '# TYPE prosafe_max_mtu gauge\n'
                 result += '# UNIT prosafe_max_mtu bytes\n'
                 for status in self.status:
                     if len(status) >= 4:
-                        result += 'prosafe_max_mtu{hostname="' + self.hostname + '", port="' + status[0]+'"} ' + str(status[3]) + '\n'
+                        result += 'prosafe_max_mtu{hostname="' + self.hostname + \
+                            '", port="' + status[0] + \
+                            '"} ' + str(status[3]) + '\n'
                 result += '\n# HELP prosafe_receive_bytes_total Received bytes at port\n'
                 result += '# TYPE prosafe_receive_bytes_total counter\n'
                 result += '# UNIT prosafe_receive_bytes_total bytes\n'
                 for port, statistic in enumerate(self.statistics, start=1):
                     if len(statistic) >= 1:
-                        result += 'prosafe_receive_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[0]) + '\n'
+                        result += 'prosafe_receive_bytes_total{hostname="' + self.hostname + '", port="' + str(
+                            port)+'"} ' + str(statistic[0]) + '\n'
                 result += '\n# HELP prosafe_transmit_bytes_total Transmitted bytes at port\n'
                 result += '# TYPE prosafe_transmit_bytes_total counter\n'
                 result += '# UNIT prosafe_transmit_bytes_total bytes\n'
                 for port, statistic in enumerate(self.statistics, start=1):
                     if len(statistic) >= 2:
-                        result += 'prosafe_transmit_bytes_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[1]) + '\n'
+                        result += 'prosafe_transmit_bytes_total{hostname="' + self.hostname + '", port="' + str(
+                            port)+'"} ' + str(statistic[1]) + '\n'
                 result += '\n# HELP prosafe_error_packets_total Error bytes at port\n'
                 result += '# TYPE prosafe_error_packets_total counter\n'
                 result += '# UNIT prosafe_error_packets_total bytes\n'
                 for port, statistic in enumerate(self.statistics, start=1):
                     if len(statistic) >= 3:
-                        result += 'prosafe_error_packets_total{hostname="' + self.hostname + '", port="' + str(port)+'"} ' + str(statistic[2]) + '\n'
+                        result += 'prosafe_error_packets_total{hostname="' + self.hostname + '", port="' + str(
+                            port)+'"} ' + str(statistic[2]) + '\n'
             self.result = result
 
     @staticmethod
@@ -347,9 +398,12 @@ class ProSafeRetrieve:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Query Netgear ProSafe Switches using the web interface to provide statistics for Prometheus')
-    parser.add_argument('config', type=argparse.FileType('r'), help='configuration')
-    parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
+    parser = argparse.ArgumentParser(
+        description='Query Netgear ProSafe Switches using the web interface to provide statistics for Prometheus')
+    parser.add_argument('config', type=argparse.FileType(
+        'r'), help='configuration')
+    parser.add_argument("-v", "--verbose",
+                        help="increase output verbosity", action="store_true")
     args = parser.parse_args()
 
     config = yaml.load(args.config, Loader=yaml.SafeLoader)
@@ -365,7 +419,8 @@ def main():
         ch.setLevel(logging.WARNING)
 
     # create formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     # add formatter to ch
     ch.setFormatter(formatter)
@@ -385,20 +440,29 @@ def main():
         config['global']['retries'] = 10
 
     if 'switches' not in config:
-        logger.error('You have to define switches in the switches: section of your configuration')
+        logger.error(
+            'You have to define switches in the switches: section of your configuration')
         exit(1)
 
     retrievers = list()
     for switch in config['switches']:
         if 'hostname' not in switch:
-            logger.error('You have to define the hostname for the switch, ignoring this switch entry')
+            logger.error(
+                'You have to define the hostname for the switch, ignoring this switch entry')
             continue
         if 'password' not in switch:
-            logger.error('You have to define the password for the switch, ignoring this switch entry')
+            logger.error(
+                'You have to define the password for the switch, ignoring this switch entry')
             continue
-        retrievers.append(ProSafeRetrieve(hostname=switch['hostname'], password=switch['password'], logger=logger, retries=config['global']['retries']))
+        retrievers.append(
+            ProSafeRetrieve(
+                hostname=switch['hostname'],
+                password=switch['password'],
+                logger=logger,
+                retries=config['global']['retries']))
     exporter = ProSafeExporter(retrievers=retrievers, logger=logger)
-    exporter.run(host=config['global']['host'], port=config['global']['port'], retrieveInterval=config['global']['retrieve_interval'], debug=args.verbose)
+    exporter.run(host=config['global']['host'], port=config['global']['port'],
+                 retrieveInterval=config['global']['retrieve_interval'], debug=args.verbose)
 
 
 if __name__ == "__main__":
