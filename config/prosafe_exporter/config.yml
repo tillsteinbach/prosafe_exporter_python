@@ -1,5 +1,6 @@
 global: 
   retrieve_interval: 20.0
+  retries: 10
   host: "0.0.0.0"
   port: 9493
 switches: 

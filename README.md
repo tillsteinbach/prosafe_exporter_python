@@ -17,6 +17,7 @@ Setup a config.yml
 ```yml
 global: 
   retrieve_interval: 20.0
+  retries: 10
   host: "0.0.0.0"
   port: 9493
 switches: 
@@ -60,9 +61,10 @@ rate(prosafe_transmit_bytes_total{instance="192.168.0.123", port="1"}[1m])
 ## Tested Firmware
 - V2.06.14GR
 - V2.06.14EN
+-	V2.06.03EN
 
 ## Known Issues
-- Does not work with old firmware, you may need to update to a recent one
+- May not work with older firmware, not all firmware versions are tested
 - Does not work with Japanese firmware
 
 ## Credits
