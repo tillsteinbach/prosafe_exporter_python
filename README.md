@@ -10,7 +10,9 @@
 | prosafe_transmit_bytes_total | Outgoing transfer in bytes                     | hostname, port                           |
 | prosafe_error_packets_total  | Transfer error in packets                      | hostname, port                           |
 | prosafe_link_speed           | Link speed in Mbps                             | hostname, port                           |
-| prosafe_max_mtu              | Maximum MTU                                    | hostname, port                           |
+| prosafe_max_mtu*             | Maximum MTU                                    | hostname, port                           |
+
+\* not available in all firmware versions
 
 ## Install
 Setup a config.yml
