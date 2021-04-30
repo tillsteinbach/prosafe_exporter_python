@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Docker meta
         id: meta
-        uses: crazy-max/ghaction-docker-meta@v2.3.0
+        uses: crazy-max/ghaction-docker-meta@v2.4.0
         with:
           images: |
             tillsteinbach/prosafe_exporter_python
