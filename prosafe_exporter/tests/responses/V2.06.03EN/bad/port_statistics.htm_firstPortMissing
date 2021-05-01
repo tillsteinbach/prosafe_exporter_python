@@ -5,14 +5,14 @@
 <title>Port Statistics</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-<link rel="stylesheet" type="text/css" href="/style.css?v3.e">
-<script  src="frame.js?v3.e" type="text/javascript"></script>
-<script  src="function.js?v3.e" type="text/javascript"></script>
+<link rel="stylesheet" type="text/css" href="/style.css?v=1.0">
+<script  src="frame.js?v=1.0" type="text/javascript"></script>
+<script  src="function.js?v=1.0" type="text/javascript"></script>
 </head>
 <body onload="initTableCss();counter()">
 <form method="post" action="portStatistics.cgi">
 <input type="hidden" name="clearCounters" id="clearCounters" value="">
-<input type="hidden" name='hash' id='hash' value='66e30f94417cc7204cd11a206073b441'>
+<input type="hidden" name='hash' id='hash' value='18483'>
 </form>
 <form method="get" action="portStatistics.cgi">
 <table class="detailsAreaContainer">
@@ -20,20 +20,29 @@
 <td>
 <table class="tableStyle">
 <tr>
-<script>tbhdrTable('Portstatistik','portStatistics')</script>
+<script>tbhdrTable('Port Statistics','portStatistics')</script>
 </tr>
 <tr><td class="topTitleBottomBar" colspan="2"></td></tr>
 <tr><td class="paddingTableBody" colspan="2"><table class="tableStyle" id="tbl2" style='width:745px;'>
 <tr>
 <tr>
 <td class="def_TH">Port</td>
-<td class="def_TH spacer30Percent">Empfangene Bytes</td>
-<td class="def_TH spacer30Percent">Gesendete Bytes</td>
-<td class="def_TH spacer30Percent">Pakete mit CRC-Fehlern</td>
+<td class="def_TH spacer30Percent">Bytes Received</td>
+<td class="def_TH spacer30Percent">Bytes Sent</td>
+<td class="def_TH spacer30Percent">CRC Error Packets</td>
 
 
 <tr class="portID" name="portID">
 <td class="def firstCol" sel="text">1</td>
+<td class="def" sel="text"></td>
+<input type='hidden' name='rxPkt' value='00000000'>
+<td class="def" sel="text"></td>
+<!--<input type='hidden' name='txpkt' value='00000000'>-->
+<td class="def" sel="text"></td>
+<input type='hidden' name='crcPkt' value='00000000'>
+
+<tr class="portID" name="portID">
+<td class="def firstCol" sel="text">2</td>
 <td class="def" sel="text"></td>
 <input type='hidden' name='rxPkt' value='00000000'>
 <td class="def" sel="text"></td>
@@ -42,40 +51,31 @@
 <input type='hidden' name='crcPkt' value='00000000'>
 
 <tr class="portID" name="portID">
-<td class="def firstCol" sel="text">2</td>
-<td class="def" sel="text"></td>
-<input type='hidden' name='rxPkt' value='00000001'>
-<td class="def" sel="text"></td>
-<input type='hidden' name='txpkt' value='00000001'>
-<td class="def" sel="text"></td>
-<input type='hidden' name='crcPkt' value='00000001'>
-
-<tr class="portID" name="portID">
 <td class="def firstCol" sel="text">3</td>
 <td class="def" sel="text"></td>
-<input type='hidden' name='rxPkt' value='0000000F'>
+<input type='hidden' name='rxPkt' value='00000000'>
 <td class="def" sel="text"></td>
-<input type='hidden' name='txpkt' value='0000000F'>
+<input type='hidden' name='txpkt' value='00000000'>
 <td class="def" sel="text"></td>
-<input type='hidden' name='crcPkt' value='0000000F'>
+<input type='hidden' name='crcPkt' value='00000000'>
 
 <tr class="portID" name="portID">
 <td class="def firstCol" sel="text">4</td>
 <td class="def" sel="text"></td>
-<input type='hidden' name='rxPkt' value='FFFFFFFF'>
+<input type='hidden' name='rxPkt' value='00000000'>
 <td class="def" sel="text"></td>
-<input type='hidden' name='txpkt' value='FFFFFFFF'>
+<input type='hidden' name='txpkt' value='00000000'>
 <td class="def" sel="text"></td>
-<input type='hidden' name='crcPkt' value='FFFFFFFF'>
+<input type='hidden' name='crcPkt' value='00000000'>
 
 <tr class="portID" name="portID">
 <td class="def firstCol" sel="text">5</td>
 <td class="def" sel="text"></td>
-<input type='hidden' name='rxPkt' value='FFFFFFFFFFFFFFFF'>
+<input type='hidden' name='rxPkt' value='00000000'>
 <td class="def" sel="text"></td>
-<input type='hidden' name='txpkt' value='FFFFFFFFFFFFFFFF'>
+<input type='hidden' name='txpkt' value='00000000'>
 <td class="def" sel="text"></td>
-<input type='hidden' name='crcPkt' value='FFFFFFFFFFFFFFFF'>
+<input type='hidden' name='crcPkt' value='00000000'>
 
 <tr class="portID" name="portID">
 <td class="def firstCol" sel="text">6</td>
@@ -113,8 +113,8 @@
 </td></tr>
 </form>
 <script>
-var str = CreateButtons('button','Zähler zurücksetzen','submitClearCounters()','btn_Cancel','on');
-str += CreateButtons('button','Aktualisieren','submitForm()','btn_Refresh','on');
+var str = CreateButtons('button','Clear Counters','submitClearCounters()','btn_Cancel','on');
+str += CreateButtons('button','Refresh','submitForm()','btn_Refresh','on');
 PaintButtons(str);
 </script>
 </body>
