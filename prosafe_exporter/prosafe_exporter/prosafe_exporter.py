@@ -50,7 +50,7 @@ class ProSafeExporter:
         result = "# Exporter output\n\n"
         for retriever in self.retrievers:
                 result += retriever.result + '\n\n'
-        self.logger.info('Request on endpoint /probe \n%s', result)
+        self.logger.info('Request on endpoint /%s \n%s', path, result)
         return flask.Response(result, status=200, headers={})
 
     def __retrieve(self):

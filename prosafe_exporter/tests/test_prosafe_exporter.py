@@ -2,15 +2,11 @@ import pytest
 
 import logging
 
-from prosafe_exporter.prosafe_exporter import ProSafeExporter, ProSafeRetrieve
+from prosafe_exporter.prosafe_exporter import ProSafeRetrieve
 
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
     return ("localhost", 8888)
-
-@pytest.fixture
-def exporter():
-    exporter = ProSafeExporter(retrievers=[])
 
 @pytest.fixture
 def retriever():
