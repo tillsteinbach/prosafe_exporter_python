@@ -6,6 +6,7 @@ COPY prosafe_exporter prosafe_exporter
 
 RUN apk add --no-cache --virtual .build-deps gcc libc-dev libxml2-dev libxslt-dev && \
     apk add --no-cache libxslt && \
+    pip install flake8 && \
     pip install ./prosafe_exporter/ && \
     apk del .build-deps
 
