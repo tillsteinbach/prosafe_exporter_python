@@ -133,6 +133,7 @@ def test_oneTXMissing(retriever, firmware,  httpserver):
     httpserver.check_assertions()
 
     retriever.writeResult()
+    assert retriever.result == '# ERROR: ' + retriever.error + '\n'
 
 @pytest.mark.parametrize('firmware',
     [('V2.06.03EN')])
@@ -243,3 +244,105 @@ def test_retry(retriever, firmware, retry, httpserver):
 
     assert retriever.infos == retriever.status == retriever.statistics == None
     assert retriever.error == "Connection Error with host " + retriever.hostname
+
+    retriever.writeResult()
+    assert retriever.result == '# ERROR: ' + retriever.error + '\n'
+
+@pytest.mark.parametrize('firmware',
+    [('V2.06.14GR'), ('V2.06.03EN')])
+def test_write(retriever, firmware):
+    retriever.infos = dict()
+    retriever.infos['product_name'] = 'GS108Ev3'
+    retriever.infos['switch_name'] = 'MyFancySwitch'
+    retriever.infos['serial_number'] = '123456789'
+    retriever.infos['mac_adresse'] = '00:11:22:33:44:55'
+    retriever.infos['firmware_version'] = '0.1.2ABC'
+    retriever.infos['dhcp_mode'] = '0'
+    retriever.infos['ip_adresse'] = '1.2.3.4'
+    retriever.infos['subnetmask'] = '255.255.255.255'
+    retriever.infos['gateway_adresse'] = '1.2.3.4'
+    if firmware in ['V2.06.03EN']:
+        retriever.status = [[str(x), 'Active', '2'] for x in range(1, 9)]
+    else:
+        retriever.status = [[str(x), 'Active', '2', str(x*1000)] for x in range(1, 9)]
+    retriever.statistics = [[str(x*1), str(x*100), str(x*1000)] for x in range(1, 9)]
+
+    retriever.writeResult()
+    resultString = '\n' \
+        '# HELP prosafe_switch_info All configuration items collected. This is always 1 and only used to collect labels\n' \
+        '# TYPE prosafe_switch_info gauge\n' \
+        'prosafe_switch_info{hostname="' + retriever.hostname + '", product_name="' \
+                + retriever.infos['product_name'] + '", switch_name="' \
+                + retriever.infos['switch_name'] + '", serial_number="' \
+                + retriever.infos['serial_number'] + '", mac_adresse="' \
+                + retriever.infos['mac_adresse'] + '", firmware_version="' \
+                + retriever.infos['firmware_version'] + '", dhcp_mode="' \
+                + retriever.infos['dhcp_mode'] + '", ip_adresse="' \
+                + retriever.infos['ip_adresse'] + '", subnetmask="' \
+                + retriever.infos['subnetmask'] + '", gateway_adresse="' \
+                + retriever.infos['gateway_adresse'] + '", } 1\n' \
+        '\n' \
+        '# HELP prosafe_link_speed Link speed of the port in MBit, 0 means unconnected\n' \
+        '# TYPE prosafe_link_speed gauge\n' \
+        '# UNIT prosafe_link_speed megabit per second\n' \
+        'prosafe_link_speed{hostname="' + retriever.hostname + '", port="1"} 2\n' \
+        'prosafe_link_speed{hostname="' + retriever.hostname + '", port="2"} 2\n' \
+        'prosafe_link_speed{hostname="' + retriever.hostname + '", port="3"} 2\n' \
+        'prosafe_link_speed{hostname="' + retriever.hostname + '", port="4"} 2\n' \
+        'prosafe_link_speed{hostname="' + retriever.hostname + '", port="5"} 2\n' \
+        'prosafe_link_speed{hostname="' + retriever.hostname + '", port="6"} 2\n' \
+        'prosafe_link_speed{hostname="' + retriever.hostname + '", port="7"} 2\n' \
+        'prosafe_link_speed{hostname="' + retriever.hostname + '", port="8"} 2\n' \
+        '\n' \
+        '# HELP prosafe_max_mtu Maximum MTU set for the port in Byte\n' \
+        '# TYPE prosafe_max_mtu gauge\n' \
+        '# UNIT prosafe_max_mtu bytes\n'
+    if firmware not in ['V2.06.03EN']:
+        resultString += 'prosafe_max_mtu{hostname="' + retriever.hostname + '", port="1"} 1000\n' \
+            'prosafe_max_mtu{hostname="' + retriever.hostname + '", port="2"} 2000\n' \
+            'prosafe_max_mtu{hostname="' + retriever.hostname + '", port="3"} 3000\n' \
+            'prosafe_max_mtu{hostname="' + retriever.hostname + '", port="4"} 4000\n' \
+            'prosafe_max_mtu{hostname="' + retriever.hostname + '", port="5"} 5000\n' \
+            'prosafe_max_mtu{hostname="' + retriever.hostname + '", port="6"} 6000\n' \
+            'prosafe_max_mtu{hostname="' + retriever.hostname + '", port="7"} 7000\n' \
+            'prosafe_max_mtu{hostname="' + retriever.hostname + '", port="8"} 8000\n'
+    
+    resultString += '\n'
+    resultString += '# HELP prosafe_receive_bytes_total Received bytes at port\n' \
+        '# TYPE prosafe_receive_bytes_total counter\n' \
+        '# UNIT prosafe_receive_bytes_total bytes\n' \
+        'prosafe_receive_bytes_total{hostname="' + retriever.hostname + '", port="1"} 1\n' \
+        'prosafe_receive_bytes_total{hostname="' + retriever.hostname + '", port="2"} 2\n' \
+        'prosafe_receive_bytes_total{hostname="' + retriever.hostname + '", port="3"} 3\n' \
+        'prosafe_receive_bytes_total{hostname="' + retriever.hostname + '", port="4"} 4\n' \
+        'prosafe_receive_bytes_total{hostname="' + retriever.hostname + '", port="5"} 5\n' \
+        'prosafe_receive_bytes_total{hostname="' + retriever.hostname + '", port="6"} 6\n' \
+        'prosafe_receive_bytes_total{hostname="' + retriever.hostname + '", port="7"} 7\n' \
+        'prosafe_receive_bytes_total{hostname="' + retriever.hostname + '", port="8"} 8\n' \
+        '\n' \
+        '# HELP prosafe_transmit_bytes_total Transmitted bytes at port\n' \
+        '# TYPE prosafe_transmit_bytes_total counter\n' \
+        '# UNIT prosafe_transmit_bytes_total bytes\n' \
+        'prosafe_transmit_bytes_total{hostname="' + retriever.hostname + '", port="1"} 100\n' \
+        'prosafe_transmit_bytes_total{hostname="' + retriever.hostname + '", port="2"} 200\n' \
+        'prosafe_transmit_bytes_total{hostname="' + retriever.hostname + '", port="3"} 300\n' \
+        'prosafe_transmit_bytes_total{hostname="' + retriever.hostname + '", port="4"} 400\n' \
+        'prosafe_transmit_bytes_total{hostname="' + retriever.hostname + '", port="5"} 500\n' \
+        'prosafe_transmit_bytes_total{hostname="' + retriever.hostname + '", port="6"} 600\n' \
+        'prosafe_transmit_bytes_total{hostname="' + retriever.hostname + '", port="7"} 700\n' \
+        'prosafe_transmit_bytes_total{hostname="' + retriever.hostname + '", port="8"} 800\n' \
+        '\n' \
+        '# HELP prosafe_error_packets_total Error bytes at port\n' \
+        '# TYPE prosafe_error_packets_total counter\n' \
+        '# UNIT prosafe_error_packets_total bytes\n' \
+        'prosafe_error_packets_total{hostname="' + retriever.hostname + '", port="1"} 1000\n' \
+        'prosafe_error_packets_total{hostname="' + retriever.hostname + '", port="2"} 2000\n' \
+        'prosafe_error_packets_total{hostname="' + retriever.hostname + '", port="3"} 3000\n' \
+        'prosafe_error_packets_total{hostname="' + retriever.hostname + '", port="4"} 4000\n' \
+        'prosafe_error_packets_total{hostname="' + retriever.hostname + '", port="5"} 5000\n' \
+        'prosafe_error_packets_total{hostname="' + retriever.hostname + '", port="6"} 6000\n' \
+        'prosafe_error_packets_total{hostname="' + retriever.hostname + '", port="7"} 7000\n' \
+        'prosafe_error_packets_total{hostname="' + retriever.hostname + '", port="8"} 8000\n' \
+        ''
+    assert retriever.result == resultString
+    assert retriever.error == ''
