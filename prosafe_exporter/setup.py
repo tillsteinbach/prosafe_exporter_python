@@ -1,5 +1,14 @@
 from setuptools import find_packages, setup
 
+with open('requirements.txt') as f:
+    install_required = f.read().splitlines()
+
+with open('setup_requirements.txt') as f:
+    setup_required = f.read().splitlines()
+
+with open('test_requirements.txt') as f:
+    test_required = f.read().splitlines()
+
 setup(
     name='prosafe_exporter',
     packages=['prosafe_exporter'],
@@ -9,8 +18,7 @@ setup(
     keywords='prometheus, netgear, metrics-exporter, prosafe, prosafe-exporter',
     url='https://github.com/tillsteinbach/prosafe_exporter_python',
     license='MIT',
-    install_requires=['Flask>=1.1.2', 'lxml>=4.6.3',
-                      'requests>=2.23.0', 'PyYAML>=4.6.3'],
+    install_requires=install_required,
     entry_points={
         'console_scripts': [
             'prosafe_exporter = prosafe_exporter.prosafe_exporter:main',
@@ -24,5 +32,6 @@ setup(
         'Topic :: System :: Networking :: Monitoring ',
       ],
     python_requires='>=3.6',
-
+    setup_requires=setup_required,
+    tests_require=test_required,
 )

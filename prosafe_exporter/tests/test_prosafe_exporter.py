@@ -243,4 +243,3 @@ def test_retry(retriever, firmware, retry, httpserver):
 
     assert retriever.infos == retriever.status == retriever.statistics == None
     assert retriever.error == "Connection Error with host " + retriever.hostname
-
