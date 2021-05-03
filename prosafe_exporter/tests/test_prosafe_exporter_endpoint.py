@@ -70,5 +70,5 @@ def test_withRetrieveException(client, retriever, httpserver, firmware):
     exporter._ProSafeExporter__retrieve()
 
     rv = client[1].get('/metrics')
-    assert rv.data == b'# Exporter output\n\n# ERROR: Login failed for ' + bytes(retriever.hostname, encoding='utf-8')
-    + b'\n\n\n'
+    assert rv.data == (b'# Exporter output\n\n# ERROR: Login failed for ' +
+                       bytes(retriever.hostname, encoding='utf-8') + b'\n\n\n')
