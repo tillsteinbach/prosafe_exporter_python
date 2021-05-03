@@ -1,0 +1,5 @@
+switches: 
+  - hostname: "192.168.0.100"
+    password: "password123"
+  - hostname: "192.168.0.200"
+    password: "password123"

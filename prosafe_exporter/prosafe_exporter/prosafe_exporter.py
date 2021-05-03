@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3
 
+import sys
 import flask
 import time
 import requests
@@ -13,6 +14,8 @@ import yaml
 import argparse
 import logging.config
 from multiprocessing import Lock
+
+from werkzeug.serving import make_server
 
 mutex = Lock()
 speedmap = {'Nicht verbunden': '0', 'No Speed': '0', '10M': '10', '100M': '100', '1000M': '1000'}
@@ -28,28 +31,35 @@ class ProSafeExporter:
                               self.__probe, methods=['POST', 'GET'])
         self.app.add_url_rule('/', '/', self.__probe, methods=['POST', 'GET'])
 
-    def run(self, host="0.0.0.0", port=9493, retrieveInterval=20.0, debug=False):
-        if not debug:
+    def run(self, host="0.0.0.0", port=9493, retrieveInterval=20.0, debug=False, endless=True):
+        if not debug:  # pragma: no cover
             os.environ['WERKZEUG_RUN_MAIN'] = 'true'
             log = logging.getLogger('werkzeug')
             log.disabled = True
 
-        webthread = threading.Thread(target=self.app.run, kwargs={
-                                     'debug': debug, 'use_reloader': False, 'host': host, 'port': port})
-        webthread.daemon = True
+        server = make_server(host, port, self.app)
+
+        webthread = threading.Thread(target=server.serve_forever)
         webthread.start()
         self.logger.info(
             'ProSafeExporter is listening on %s:%d for request on /metrics endpoint'
             ' (but you can also use any other path)', host, port)
 
-        while True:
+        try:
             self.__retrieve()
-            time.sleep(retrieveInterval)
+            while endless:  # pragma: no cover
+                time.sleep(retrieveInterval)
+                self.__retrieve()
+        except KeyboardInterrupt:  # pragma: no cover
+            pass
+        server.shutdown()
+        webthread.join()
+        self.logger.info('ProSafeExporter was stopped')
 
     def __probe(self, path=None):
         result = "# Exporter output\n\n"
         for retriever in self.retrievers:
-                result += retriever.result + '\n\n'
+            result += retriever.result + '\n\n'
         self.logger.info('Request on endpoint /%s \n%s', path, result)
         return flask.Response(result, status=200, headers={})
 
@@ -67,9 +77,16 @@ class ProSafeExporter:
 
 
 class ProSafeRetrieve:
-    def __init__(self, hostname, password, cookiefile=None, logger=logging.getLogger(), retries=10):
+    def __init__(self,
+                 hostname,
+                 password,
+                 cookiefile=None,
+                 logger=logging.getLogger(),
+                 retries=10,
+                 requestTimeout=10.0):
         self.logger = logger
         self.retries = retries
+        self.requestTimeout = requestTimeout
         self.hostname = hostname
         self.password = password
         self.session = requests.Session()
@@ -103,7 +120,7 @@ class ProSafeRetrieve:
     def __login(self):
         if self.cookie:
             indexPageRequest = self.session.get(
-                'http://'+self.hostname+'/index.htm')
+                'http://'+self.hostname+'/index.htm', timeout=self.requestTimeout)
             if 'RedirectToLoginPage' not in indexPageRequest.text:
                 self.logger.info('Already logged in for %s', self.hostname)
                 return
@@ -113,7 +130,7 @@ class ProSafeRetrieve:
                 self.logger.info(
                     'Have to login again for %s due to inactive session', self.hostname)
         loginPageRequest = self.session.get(
-            'http://'+self.hostname+'/login.htm')
+            'http://'+self.hostname+'/login.htm', timeout=self.requestTimeout)
         loginPageRequest.raise_for_status()
 
         tree = html.fromstring(loginPageRequest.content)
@@ -128,7 +145,7 @@ class ProSafeRetrieve:
                 'password': self.password,
             }
             loginRequest = self.session.post(
-                'http://'+self.hostname+'/login.cgi', data=payload)
+                'http://'+self.hostname+'/login.cgi', data=payload, timeout=self.requestTimeout)
             loginRequest.raise_for_status()
 
             tree = html.fromstring(loginRequest.content)
@@ -149,7 +166,7 @@ class ProSafeRetrieve:
             }
 
             loginRequest = self.session.post(
-                'http://'+self.hostname+'/login.cgi', data=payload)
+                'http://'+self.hostname+'/login.cgi', data=payload, timeout=self.requestTimeout)
             loginRequest.raise_for_status()
 
             tree = html.fromstring(loginRequest.content)
@@ -172,7 +189,7 @@ class ProSafeRetrieve:
             try:
                 self.__login()
                 infoRequest = self.session.get(
-                    'http://'+self.hostname+'/switch_info.htm')
+                    'http://'+self.hostname+'/switch_info.htm', timeout=self.requestTimeout)
                 infoRequest.raise_for_status()
 
                 if 'RedirectToLoginPage' in infoRequest.text:
@@ -217,12 +234,13 @@ class ProSafeRetrieve:
                 retries = self.retries
                 while retries > 0:
                     statusRequest = self.session.get(
-                        'http://' + self.hostname + '/status.htm')
+                        'http://' + self.hostname + '/status.htm', timeout=self.requestTimeout)
                     statusRequest.raise_for_status()
 
                     if 'RedirectToLoginPage' in statusRequest.text:
                         self.error = 'Login failed for ' + self.hostname
                         self.logger.error(self.error)
+                        self.infos = None
                         raise ConnectionRefusedError(self.error)
 
                     tree = html.fromstring(statusRequest.content)
@@ -249,7 +267,8 @@ class ProSafeRetrieve:
                             noProblem = False
                     if noProblem:
                         # Rewrite speed
-                        self.status = [[speedmap[n] if i==2 else n for i,n in enumerate(portStatus)] for portStatus in self.status]
+                        self.status = [[speedmap[n] if i == 2 else n for i,
+                                        n in enumerate(portStatus)] for portStatus in self.status]
                         break
                     # This might be a firmware that does not expose mtu. Try again with 3 fields:
                     self.status = [allports[x:x+3]
@@ -269,7 +288,8 @@ class ProSafeRetrieve:
                             noProblem = False
                     if noProblem:
                         # Rewrite speed
-                        self.status = [[speedmap[n] if i==2 else n for i,n in enumerate(portStatus)] for portStatus in self.status]
+                        self.status = [[speedmap[n] if i == 2 else n for i,
+                                        n in enumerate(portStatus)] for portStatus in self.status]
                         break
                     self.logger.info('Problem while retrieving status for ' + self.hostname +
                                      ' this can happen when there is much traffic on the device')
@@ -286,17 +306,19 @@ class ProSafeRetrieve:
                 while retries > 0:
                     try:
                         statisticsRequest = self.session.get(
-                            'http://' + self.hostname + '/port_statistics.htm')
+                            'http://' + self.hostname + '/port_statistics.htm', timeout=self.requestTimeout)
                         statisticsRequest.raise_for_status()
                     # Retry on different URL
-                    except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) :
+                    except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError):
                         statisticsRequest = self.session.get(
-                            'http://' + self.hostname + '/portStats.htm')
+                            'http://' + self.hostname + '/portStats.htm', timeout=self.requestTimeout)
                         statisticsRequest.raise_for_status()
 
                     if 'RedirectToLoginPage' in statisticsRequest.text:
                         self.error = 'Login failed for ' + self.hostname
                         self.logger.error(self.error)
+                        self.infos = None
+                        self.status = None
                         raise ConnectionRefusedError(self.error)
 
                     tree = html.fromstring(statisticsRequest.content)
@@ -326,7 +348,8 @@ class ProSafeRetrieve:
                 if retries == 0:
                     self.statistics = None
                     self.error = 'Could not retrieve correct statistics for ' + self.hostname + \
-                        ' after '+ str(self.retries) +' retries.  This can happen when there is much traffic on the device'
+                        ' after ' + str(self.retries) + ' retries.  This can happen when there is much traffic on the' \
+                        ' device'
                     self.logger.error(self.error)
                     return
 
@@ -341,7 +364,6 @@ class ProSafeRetrieve:
                     return
 
                 self.logger.info('Retrieval for %s done', self.hostname)
-
 
             except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError):
                 self.infos = None
@@ -420,7 +442,7 @@ class ProSafeRetrieve:
         return result
 
 
-def main():
+def main(endless=True, always_early_timeout=False):
     parser = argparse.ArgumentParser(
         description='Query Netgear ProSafe Switches using the web interface to provide statistics for Prometheus')
     parser.add_argument('config', type=argparse.FileType(
@@ -428,8 +450,6 @@ def main():
     parser.add_argument("-v", "--verbose",
                         help="increase output verbosity", action="store_true")
     args = parser.parse_args()
-
-    config = yaml.load(args.config, Loader=yaml.SafeLoader)
 
     logger = logging.getLogger('ProSafe_Exporter')
     logger.setLevel(logging.INFO)
@@ -451,6 +471,11 @@ def main():
     # add ch to logger
     logger.addHandler(ch)
 
+    config = yaml.load(args.config, Loader=yaml.SafeLoader)
+    if not config:
+        logger.error('Config empty or cannot be parsed')
+        sys.exit(3)
+
     if 'global' not in config:
         config['global'] = dict()
     if 'host' not in config['global']:
@@ -459,13 +484,18 @@ def main():
         config['global']['port'] = 9493
     if 'retrieve_interval' not in config['global']:
         config['global']['retrieve_interval'] = 20.0
+    if 'retrieve_timeout' not in config['global']:
+        config['global']['retrieve_timeout'] = 10.0
     if 'retries' not in config['global']:
         config['global']['retries'] = 10
 
-    if 'switches' not in config:
+    if 'switches' not in config or not config['switches'] or len(config['switches']) == 0:
         logger.error(
             'You have to define switches in the switches: section of your configuration')
-        exit(1)
+        sys.exit(4)
+
+    if always_early_timeout:  # pragma: no cover
+        config['global']['retrieve_timeout'] = 0.001
 
     retrievers = list()
     for switch in config['switches']:
@@ -482,10 +512,12 @@ def main():
                 hostname=switch['hostname'],
                 password=switch['password'],
                 logger=logger,
-                retries=config['global']['retries']))
+                retries=config['global']['retries'],
+                requestTimeout=config['global']['retrieve_timeout']))
     exporter = ProSafeExporter(retrievers=retrievers, logger=logger)
     exporter.run(host=config['global']['host'], port=config['global']['port'],
-                 retrieveInterval=config['global']['retrieve_interval'], debug=args.verbose)
+                 retrieveInterval=config['global']['retrieve_interval'], debug=args.verbose, endless=endless)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
