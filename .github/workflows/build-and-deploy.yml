@@ -42,7 +42,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        python3 -m pytest --basetemp=${{ runner.temp }}
+        python3 -m pytest --basetemp=.
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
       with:
