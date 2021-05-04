@@ -2,10 +2,15 @@ import sys
 import os.path
 import re
 import pytest
+import random
+import string
 
 import logging
 
 from prosafe_exporter.prosafe_exporter import ProSafeRetrieve, main
+
+# seed random to generate same sequence every time the test runs to make it deterministic
+random.seed(1)
 
 
 @pytest.fixture(autouse=True)
@@ -75,6 +80,34 @@ def checkStatistics(statistics, firmware):
     assert statistics[7][0] == statistics[7][1] == statistics[7][2] == '0'
 
 
+def genSetHeader(cookie):
+    return {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache',
+        'Expires': '-1',
+        'Set-Cookie': 'GS108SID='+cookie+'; SameSite=Lax;path=/;HttpOnly'
+    }
+
+
+def genWithHeader(cookie):
+    return {
+        'Cookie': 'GS108SID='+cookie
+    }
+
+
+def generateCookie():
+    length = 30
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+def loginGood(firmware, password, httpserver, cookie):
+    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+        httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
+    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+        httpserver.expect_ordered_request("/login.cgi", method='POST', data='password=' +
+                                          password).respond_with_data(f.readlines(), headers=genSetHeader(cookie))
+
+
 def test_serverUnreachable(retriever):
     retriever.retrieve()
     assert retriever.error == 'Connection Error with host ' + retriever.hostname
@@ -82,24 +115,28 @@ def test_serverUnreachable(retriever):
     assert retriever.result == '# ERROR: ' + retriever.error + '\n'
 
 
-@pytest.mark.parametrize('firmware', [('V2.06.14GR'), ('V2.06.14EN'), ('V2.06.03EN')])
-def test_standardRequestGood(retriever, firmware,  httpserver):
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        # TODO Check password
-        httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
+@pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700'),
+                                                ('V2.06.14EN', '5fd34891e0221be7a1dcbd78ae81a700'),
+                                                ('V2.06.03EN', 'password')])
+def test_standardRequestGood(retriever, firmware, password, httpserver):
+    cookie = generateCookie()
+    loginGood(firmware, password, httpserver, cookie)
     with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
-        httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
-        httpserver.expect_ordered_request("/status.htm", method='GET').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/status.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
-        httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data('', status=500)
+        httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data('', status=500)
         with open('tests/responses/'+firmware+'/good/portStats.htm', 'r') as f:
-            httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     retriever.retrieve()
 
     checkInfos(retriever.infos, firmware)
@@ -111,12 +148,107 @@ def test_standardRequestGood(retriever, firmware,  httpserver):
     retriever.writeResult()
 
 
-@pytest.mark.parametrize('firmware', [('V2.06.14GR'), ('V2.06.14EN'), ('V2.06.03EN')])
-def test_loginError(retriever, firmware,  httpserver):
+@pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700')])
+def test_cookiefile(firmware, password, httpserver, tmp_path):
+    cookiefile = tmp_path / "cookiefile.txt"
+
+    logger = logging.getLogger('ProSafe_Exporter')
+
+    retriever = ProSafeRetrieve(
+                hostname='localhost:8888',
+                password='password',
+                logger=logger,
+                retries=2,
+                cookiefile=cookiefile)
+
+    cookie = generateCookie()
+    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+        httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
+    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+        httpserver.expect_ordered_request("/login.cgi", method='POST', data='password=' +
+                                          password).respond_with_data(f.readlines(), headers=genSetHeader(cookie))
+    retriever._ProSafeRetrieve__login()
+    del retriever
+
+    httpserver.check_assertions()
+    assert os.path.exists(cookiefile)
+
+    # Test with old cookie
+    retrieverNew = ProSafeRetrieve(
+                hostname='localhost:8888',
+                password='password',
+                logger=logger,
+                retries=2,
+                cookiefile=cookiefile)
+    with open('tests/responses/'+firmware+'/good/index.htm', 'r') as f:
+        httpserver.expect_ordered_request("/index.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+    with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
+        httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+    with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
+        httpserver.expect_ordered_request("/status.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+    if firmware in ['V2.06.14EN']:
+        httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data('', status=500)
+        with open('tests/responses/'+firmware+'/good/portStats.htm', 'r') as f:
+            httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+    else:
+        with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+
+    retrieverNew.retrieve()
+    httpserver.check_assertions()
+
+    # Test cookie expired
+    cookieNew = generateCookie()
+    retrieverNew2 = ProSafeRetrieve(
+                hostname='localhost:8888',
+                password='password',
+                logger=logger,
+                retries=2,
+                cookiefile=cookiefile)
+    with open('tests/responses/'+firmware+'/good/index.htm_redirect', 'r') as f:
+        httpserver.expect_ordered_request("/index.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+        httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
+    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+        httpserver.expect_ordered_request("/login.cgi", method='POST', data='password=' +
+                                          password).respond_with_data(f.readlines(), headers=genSetHeader(cookieNew))
+    with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
+        httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                          headers=genWithHeader(cookieNew)).respond_with_data(f.readlines())
+    with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
+        httpserver.expect_ordered_request("/status.htm", method='GET',
+                                          headers=genWithHeader(cookieNew)).respond_with_data(f.readlines())
+    if firmware in ['V2.06.14EN']:
+        httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                          headers=genWithHeader(cookieNew)).respond_with_data('', status=500)
+        with open('tests/responses/'+firmware+'/good/portStats.htm', 'r') as f:
+            httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                              headers=genWithHeader(cookieNew)).respond_with_data(f.readlines())
+    else:
+        with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookieNew)).respond_with_data(f.readlines())
+
+    retrieverNew2.retrieve()
+    httpserver.check_assertions()
+
+
+@pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700'),
+                                                ('V2.06.14EN', '5fd34891e0221be7a1dcbd78ae81a700'),
+                                                ('V2.06.03EN', 'password')])
+def test_loginError(retriever, firmware, password, httpserver):
     with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
     with open('tests/responses/'+firmware+'/bad/login.cgi_error', 'r') as f:
-        httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/login.cgi", method='POST', data='password=' +
+                                          password).respond_with_data(f.readlines())
 
     with pytest.raises(ConnectionRefusedError) as pytest_wrapped_error:
         retriever.retrieve()
@@ -134,36 +266,84 @@ def test_loginError(retriever, firmware,  httpserver):
     retriever.writeResult()
     assert retriever.result == '# ERROR: ' + retriever.error + '\n'
 
-
-@pytest.mark.parametrize('firmware', [('V2.06.03EN')])
-def test_oneTXMissing(retriever, firmware,  httpserver):
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
+@pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
+@pytest.mark.parametrize('fails', [(1), (2)])
+def test_partOfStatusMissing(retriever, firmware,  password, httpserver, fails):
+    cookie = generateCookie()
+    loginGood(firmware, password, httpserver, cookie)
     with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
-        httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+    with open('tests/responses/'+firmware+'/bad/status.htm_partMissing', 'r') as f:
+        httpserver.expect_ordered_request("/status.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+    if fails == 2:
+        with open('tests/responses/'+firmware+'/bad/status.htm_partMissing', 'r') as f:
+            httpserver.expect_ordered_request("/status.htm", method='GET',
+                                            headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+        retriever.retrieve()
+        assert retriever.status is None
+        assert retriever.statistics is None
+    else:
+        with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
+            httpserver.expect_ordered_request("/status.htm", method='GET',
+                                            headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+        if firmware in ['V2.06.14EN']:
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                            headers=genWithHeader(cookie)).respond_with_data('', status=500)
+            with open('tests/responses/'+firmware+'/good/portStats.htm', 'r') as f:
+                httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                                headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+        else:
+            with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
+                httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                                headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+        retriever.retrieve()
+        checkStatus(retriever.status, firmware)
+        checkStatistics(retriever.statistics, firmware)
+
+    checkInfos(retriever.infos, firmware)
+        
+
+    httpserver.check_assertions()
+
+    retriever.writeResult()
+
+@pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
+def test_oneTXMissing(retriever, firmware,  password, httpserver):
+    cookie = generateCookie()
+    loginGood(firmware, password, httpserver, cookie)
+    with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
+        httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
-        httpserver.expect_ordered_request("/status.htm", method='GET').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/status.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
-        httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data('', status=500)
+        httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data('', status=500)
         with open('tests/responses/'+firmware+'/bad/portStats.htm_oneTXMissing', 'r') as f:
             badResponse = f.readlines()
-            httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(badResponse)
-            httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(badResponse)
+            httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(badResponse)
+            httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(badResponse)
     else:
         with open('tests/responses/'+firmware+'/bad/port_statistics.htm_oneTXMissing', 'r') as f:
             badResponse = f.readlines()
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(badResponse)
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(badResponse)
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(badResponse)
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(badResponse)
     retriever.retrieve()
 
     checkInfos(retriever.infos, firmware)
-
-    assert retriever.status is None and retriever.statistics is None
-    assert retriever.error == 'Result is not  plausible for ' + retriever.hostname + \
-                              ' Different number of ports for statistics and status. This can happen when there is' \
-                              ' much traffic on the device'
+    checkStatus(retriever.status, firmware)
+    
+    assert retriever.statistics is None
+    assert retriever.error == 'Could not retrieve correct statistics for ' + retriever.hostname + \
+                              ' after ' + str(retriever.retries) + ' retries.  This can happen when there is much' \
+                              ' traffic on the device'
 
     httpserver.check_assertions()
 
@@ -171,73 +351,72 @@ def test_oneTXMissing(retriever, firmware,  httpserver):
     assert retriever.result == '# ERROR: ' + retriever.error + '\n'
 
 
-@pytest.mark.parametrize('firmware', [('V2.06.03EN')])
-def test_firstPortMissing(retriever, firmware,  httpserver):
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
+@pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
+def test_firstPortMissing(retriever, firmware,  password, httpserver):
+    cookie = generateCookie()
+    loginGood(firmware, password, httpserver, cookie)
     with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
-        httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
-        httpserver.expect_ordered_request("/status.htm", method='GET').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/status.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
-        httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data('', status=500)
+        httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data('', status=500)
         with open('tests/responses/'+firmware+'/bad/portStats.htm_firstPortMissing', 'r') as f:
-            httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(f.readlines())
-        with open('tests/responses/'+firmware+'/good/portStats.htm', 'r') as f:
-            httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         with open('tests/responses/'+firmware+'/bad/port_statistics.htm_firstPortMissing', 'r') as f:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(f.readlines())
-        with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     retriever.retrieve()
 
     checkInfos(retriever.infos, firmware)
-    checkStatus(retriever.status, firmware)
-    checkStatistics(retriever.statistics, firmware)
+    
+    assert retriever.status is None and retriever.statistics is None
 
     httpserver.check_assertions()
 
     retriever.writeResult()
 
 
-@pytest.mark.parametrize('firmware', [('V2.06.03EN')])
-def test_lastPortMissing(retriever, firmware,  httpserver):
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
+@pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
+def test_lastPortMissing(retriever, firmware, password, httpserver):
+    cookie = generateCookie()
+    loginGood(firmware, password, httpserver, cookie)
     with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
-        httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
-        httpserver.expect_ordered_request("/status.htm", method='GET').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/status.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
-        httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data('', status=500)
+        httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data('', status=500)
         with open('tests/responses/'+firmware+'/bad/portStats.htm_lastPortMissing', 'r') as f:
-            httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(f.readlines())
-        with open('tests/responses/'+firmware+'/good/portStats.htm', 'r') as f:
-            httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         with open('tests/responses/'+firmware+'/bad/port_statistics.htm_lastPortMissing', 'r') as f:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(f.readlines())
-        with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     retriever.retrieve()
 
     checkInfos(retriever.infos, firmware)
-    checkStatus(retriever.status, firmware)
-    checkStatistics(retriever.statistics, firmware)
+    
+    assert retriever.status is None and retriever.statistics is None
 
     httpserver.check_assertions()
 
     retriever.writeResult()
 
 
-@pytest.mark.parametrize('firmware', [('V2.06.03EN')])
+@pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
 @pytest.mark.parametrize('retry', ['login_get', 'login_post', 'switch_info', 'status', 'statistics'])
-def test_retry(retriever, firmware, retry, httpserver):
+def test_retry(retriever, firmware, retry, password, httpserver):
+    cookie = generateCookie()
     if retry == 'login_get':
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data('', status=500)
         with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
@@ -248,32 +427,41 @@ def test_retry(retriever, firmware, retry, httpserver):
 
     if retry == 'login_post':
         with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-            httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data('', status=500)
+            httpserver.expect_ordered_request("/login.cgi", method='POST',
+                                              data='password='+password).respond_with_data('', status=500)
     elif retry not in ['login_get']:
         with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-            httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/login.cgi", method='POST', data='password=' +
+                                              password).respond_with_data(f.readlines(), headers=genSetHeader(cookie))
 
     if retry == 'switch_info':
         with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
-            httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data('', status=500)
+            httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data('', status=500)
     elif retry not in ['login_get', 'login_post']:
         with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
-            httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
     if retry == 'status':
         with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
-            httpserver.expect_ordered_request("/status.htm", method='GET').respond_with_data('', status=500)
+            httpserver.expect_ordered_request("/status.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data('', status=500)
     elif retry not in ['login_get', 'login_post', 'switch_info']:
         with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
-            httpserver.expect_ordered_request("/status.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/status.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
     if retry == 'statistics':
         with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data('', status=500)
-            httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data('', status=500)
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data('', status=500)
+            httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data('', status=500)
     elif retry not in ['login_get', 'login_post', 'switch_info', 'status']:
         with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
     retriever.retrieve()
 
@@ -284,41 +472,53 @@ def test_retry(retriever, firmware, retry, httpserver):
     assert retriever.result == '# ERROR: ' + retriever.error + '\n'
 
 
-@pytest.mark.parametrize('firmware', [('V2.06.03EN')])
+@pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
 @pytest.mark.parametrize('redirect', ['switch_info', 'status', 'statistics'])
-def test_redirect(retriever, firmware, redirect, httpserver):
+def test_redirect(retriever, firmware, password, redirect, httpserver):
+    cookie = generateCookie()
     with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
     with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
-        httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
+        httpserver.expect_ordered_request("/login.cgi", method='POST', data='password=' +
+                                          password).respond_with_data(f.readlines(), headers=genSetHeader(cookie))
     if redirect in ['switch_info']:
         with open('tests/responses/'+firmware+'/good/index.htm_redirect', 'r') as f:
-            httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         with open('tests/responses/'+firmware+'/good/switch_info.htm', 'r') as f:
-            httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if redirect in ['status']:
         with open('tests/responses/'+firmware+'/good/index.htm_redirect', 'r') as f:
-            httpserver.expect_ordered_request("/status.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/status.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         with open('tests/responses/'+firmware+'/good/status.htm', 'r') as f:
-            httpserver.expect_ordered_request("/status.htm", method='GET').respond_with_data(f.readlines())
+            httpserver.expect_ordered_request("/status.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if redirect in ['statistics']:
         if firmware in ['V2.06.14EN']:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data('', status=500)
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data('', status=500)
             with open('tests/responses/'+firmware+'/good/index.htm_redirect', 'r') as f:
-                httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(f.readlines())
+                httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                                  headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         else:
             with open('tests/responses/'+firmware+'/good/index.htm_redirect', 'r') as f:
-                httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(f.readlines())
+                httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                                  headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         if firmware in ['V2.06.14EN']:
-            httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data('', status=500)
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data('', status=500)
             with open('tests/responses/'+firmware+'/good/portStats.htm', 'r') as f:
-                httpserver.expect_ordered_request("/portStats.htm", method='GET').respond_with_data(f.readlines())
+                httpserver.expect_ordered_request("/portStats.htm", method='GET',
+                                                  headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         else:
             with open('tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
-                httpserver.expect_ordered_request("/port_statistics.htm", method='GET').respond_with_data(f.readlines())
+                httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                                  headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
     with pytest.raises(ConnectionRefusedError) as pytest_wrapped_error:
         retriever.retrieve()

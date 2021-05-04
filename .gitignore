@@ -1,3 +1,7 @@
 *.pyc
 *.eggs
 *.egg-info
+**/coverage_html_report/**
+prosafe_exporter/build/**
+prosafe_exporter/.cache/**
+prosafe_exporter/.coverage

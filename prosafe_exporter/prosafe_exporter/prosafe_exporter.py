@@ -90,7 +90,7 @@ class ProSafeRetrieve:
         self.hostname = hostname
         self.password = password
         self.session = requests.Session()
-        self.cookie = None
+        self.loggedIn = False
         self.cookiefile = cookiefile
         self.infos = None
         self.status = None
@@ -104,11 +104,11 @@ class ProSafeRetrieve:
             if os.path.isfile(self.cookiefile):
                 with open(self.cookiefile, 'r') as f:
                     cookies = requests.utils.cookiejar_from_dict(json.load(f))
-                    self.cookie = cookies
                     self.session.cookies.update(cookies)
+                    self.loggedIn = True
                     self.logger.info('Using cookiefile %s', self.cookiefile)
             else:
-                self.logger.error('Cannot use cookiefile %s', self.cookiefile)
+                self.logger.info('Cannot use cookiefile %s', self.cookiefile)
 
     def __del__(self):
         if self.cookiefile:
@@ -118,7 +118,7 @@ class ProSafeRetrieve:
                 self.logger.info('Writing cookiefile %s', self.cookiefile)
 
     def __login(self):
-        if self.cookie:
+        if self.loggedIn:
             indexPageRequest = self.session.get(
                 'http://'+self.hostname+'/index.htm', timeout=self.requestTimeout)
             if 'RedirectToLoginPage' not in indexPageRequest.text:
@@ -127,6 +127,7 @@ class ProSafeRetrieve:
             else:
                 # lets start with a new session
                 self.session = requests.Session()
+                self.loggedIn = False
                 self.logger.info(
                     'Have to login again for %s due to inactive session', self.hostname)
         loginPageRequest = self.session.get(
@@ -135,6 +136,7 @@ class ProSafeRetrieve:
 
         tree = html.fromstring(loginPageRequest.content)
         rand = tree.xpath('//input[@id="rand"]/@value[1]')
+        payload = None
         if len(rand) != 1:
             # looks like an old firmware without seed
             self.logger.warning(
@@ -144,17 +146,6 @@ class ProSafeRetrieve:
             payload = {
                 'password': self.password,
             }
-            loginRequest = self.session.post(
-                'http://'+self.hostname+'/login.cgi', data=payload, timeout=self.requestTimeout)
-            loginRequest.raise_for_status()
-
-            tree = html.fromstring(loginRequest.content)
-            errorMsg = tree.xpath('//input[@id="err_msg"]/@value[1]')
-            if errorMsg and errorMsg[0]:
-                self.error = 'I could not login at the switch ' + \
-                    self.hostname + ' due to: ' + errorMsg[0]
-                self.logger.error(self.error)
-                raise ConnectionRefusedError(self.error)
         else:
             rand = rand[0]
 
@@ -165,17 +156,19 @@ class ProSafeRetrieve:
                 'password': password.hexdigest(),
             }
 
-            loginRequest = self.session.post(
-                'http://'+self.hostname+'/login.cgi', data=payload, timeout=self.requestTimeout)
-            loginRequest.raise_for_status()
+        loginRequest = self.session.post(
+            'http://'+self.hostname+'/login.cgi', data=payload, timeout=self.requestTimeout)
+        loginRequest.raise_for_status()
 
-            tree = html.fromstring(loginRequest.content)
-            errorMsg = tree.xpath('//input[@id="err_msg"]/@value[1]')
-            if errorMsg and errorMsg[0]:
-                self.error = 'I could not login at the switch ' + \
-                    self.hostname + ' due to: ' + errorMsg[0]
-                self.logger.error(self.error)
-                raise ConnectionRefusedError(self.error)
+        tree = html.fromstring(loginRequest.content)
+        errorMsg = tree.xpath('//input[@id="err_msg"]/@value[1]')
+        if errorMsg and errorMsg[0]:
+            self.error = 'I could not login at the switch ' + \
+                self.hostname + ' due to: ' + errorMsg[0]
+            self.logger.error(self.error)
+            raise ConnectionRefusedError(self.error)
+        else:
+            self.loggedIn = True
 
     def retrieve(self):
         self.logger.info('Start retrieval for %s', self.hostname)
@@ -296,7 +289,7 @@ class ProSafeRetrieve:
                     retries -= 1
                 if retries == 0:
                     self.status = None
-                    self.error = 'Could not retrieve correct status for ' + self.hostname + ' after '+self.retries + \
+                    self.error = 'Could not retrieve correct status for ' + self.hostname + ' after ' + str(self.retries) + \
                         ' retries. This can happen when there is much traffic on the device, but it is more likely' \
                         ' that the firmware is not understood'
                     self.logger.error(self.error)
@@ -447,8 +440,8 @@ def main(endless=True, always_early_timeout=False):
         description='Query Netgear ProSafe Switches using the web interface to provide statistics for Prometheus')
     parser.add_argument('config', type=argparse.FileType(
         'r'), help='configuration')
-    parser.add_argument("-v", "--verbose",
-                        help="increase output verbosity", action="store_true")
+    parser.add_argument('-v', '--verbose',
+                        help='increase output verbosity', action='store_true')
     args = parser.parse_args()
 
     logger = logging.getLogger('ProSafe_Exporter')
@@ -507,13 +500,16 @@ def main(endless=True, always_early_timeout=False):
             logger.error(
                 'You have to define the password for the switch, ignoring this switch entry')
             continue
+        if 'cookiefile' not in switch:
+            switch['cookiefile'] = None
         retrievers.append(
             ProSafeRetrieve(
                 hostname=switch['hostname'],
                 password=switch['password'],
                 logger=logger,
                 retries=config['global']['retries'],
-                requestTimeout=config['global']['retrieve_timeout']))
+                requestTimeout=config['global']['retrieve_timeout'],
+                cookiefile=switch['cookiefile']))
     exporter = ProSafeExporter(retrievers=retrievers, logger=logger)
     exporter.run(host=config['global']['host'], port=config['global']['port'],
                  retrieveInterval=config['global']['retrieve_interval'], debug=args.verbose, endless=endless)

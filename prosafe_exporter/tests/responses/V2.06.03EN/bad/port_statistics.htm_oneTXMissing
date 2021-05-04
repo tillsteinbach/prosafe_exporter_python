@@ -32,14 +32,14 @@
 <td class="def_TH spacer30Percent">CRC Error Packets</td>
 
 
-<!--<tr class="portID" name="portID">
+<tr class="portID" name="portID">
 <td class="def firstCol" sel="text">1</td>
 <td class="def" sel="text"></td>
 <input type='hidden' name='rxPkt' value='00000000'>
 <td class="def" sel="text"></td>
-<input type='hidden' name='txpkt' value='00000000'>
+<!--<input type='hidden' name='txpkt' value='00000000'>-->
 <td class="def" sel="text"></td>
-<input type='hidden' name='crcPkt' value='00000000'>-->
+<input type='hidden' name='crcPkt' value='00000000'>
 
 <tr class="portID" name="portID">
 <td class="def firstCol" sel="text">2</td>
