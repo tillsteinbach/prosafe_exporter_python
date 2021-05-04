@@ -173,7 +173,7 @@ def test_cookiefile(request, firmware, password, httpserver):
     del retriever
 
     httpserver.check_assertions()
-    assert os.path.exists(cookiefile)
+    assert os.path.isfile(cookiefile)
 
     # Test with old cookie
     retrieverNew = ProSafeRetrieve(
