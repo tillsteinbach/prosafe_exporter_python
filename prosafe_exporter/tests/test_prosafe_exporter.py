@@ -150,9 +150,9 @@ def test_standardRequestGood(request, retriever, firmware, password, httpserver)
 
 
 @pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700')])
-def test_cookiefile(request, firmware, password, httpserver, tmp_path):
-    assert os.path.exists(tmp_path)
-    cookiefile = tmp_path / "cookiefile.txt"
+def test_cookiefile(request, firmware, password, httpserver):
+    cookiefile = "cookiefile.txt"
+    assert not os.path.isfile(cookiefile)
 
     logger = logging.getLogger('ProSafe_Exporter')
 
@@ -204,6 +204,7 @@ def test_cookiefile(request, firmware, password, httpserver, tmp_path):
 
     retrieverNew.retrieve()
     httpserver.check_assertions()
+    del retrieverNew
 
     # Test cookie expired
     cookieNew = generateCookie()
@@ -240,10 +241,11 @@ def test_cookiefile(request, firmware, password, httpserver, tmp_path):
 
     retrieverNew2.retrieve()
     httpserver.check_assertions()
+    del retrieverNew2
 
-    if os.path.exists(cookiefile):
+    if os.path.isfile(cookiefile):
         os.remove(cookiefile)
-    assert not os.path.exists(cookiefile)
+    assert not os.path.isfile(cookiefile)
         
 
 
@@ -287,30 +289,29 @@ def test_partOfStatusMissing(request, retriever, firmware,  password, httpserver
     if fails == 2:
         with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/bad/status.htm_partMissing', 'r') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
-                                            headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         retriever.retrieve()
         assert retriever.status is None
         assert retriever.statistics is None
     else:
         with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/status.htm', 'r') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
-                                            headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         if firmware in ['V2.06.14EN']:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
-                                            headers=genWithHeader(cookie)).respond_with_data('', status=500)
+                                              headers=genWithHeader(cookie)).respond_with_data('', status=500)
             with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/portStats.htm', 'r') as f:
                 httpserver.expect_ordered_request("/portStats.htm", method='GET',
-                                                headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+                                                  headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         else:
             with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/port_statistics.htm', 'r') as f:
                 httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
-                                                headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+                                                  headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         retriever.retrieve()
         checkStatus(retriever.status, firmware)
         checkStatistics(retriever.statistics, firmware)
 
     checkInfos(retriever.infos, firmware)
-        
 
     httpserver.check_assertions()
 
