@@ -55,16 +55,16 @@ def test_withRetrieve(client, retriever):
 
 
 @pytest.mark.parametrize('firmware', [('V2.06.03EN')])
-def test_withRetrieveException(client, retriever, httpserver, firmware):
+def test_withRetrieveException(request, client, retriever, httpserver, firmware):
     exporter = client[0]
 
     exporter.retrievers = [retriever]
 
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+    with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/login.htm', 'r') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open('tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+    with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/login.htm', 'r') as f:
         httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
-    with open('tests/responses/'+firmware+'/good/index.htm_redirect', 'r') as f:
+    with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/index.htm_redirect', 'r') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
 
     exporter._ProSafeExporter__retrieve()

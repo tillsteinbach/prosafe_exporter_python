@@ -513,6 +513,9 @@ def main(endless=True, always_early_timeout=False):
     exporter = ProSafeExporter(retrievers=retrievers, logger=logger)
     exporter.run(host=config['global']['host'], port=config['global']['port'],
                  retrieveInterval=config['global']['retrieve_interval'], debug=args.verbose, endless=endless)
+    # Cleanup
+    del exporter
+    retrievers.clear()
     sys.exit(0)
 
 
