@@ -8,7 +8,7 @@ on:
     tags:
       - "v*"
     paths:
-     - .github/workflows/build.yml
+     - .github/workflows/build-and-deploy.yml
      - prosafe_exporter/**
      - Dockerfile
 
