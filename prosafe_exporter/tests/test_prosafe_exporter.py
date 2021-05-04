@@ -151,6 +151,7 @@ def test_standardRequestGood(request, retriever, firmware, password, httpserver)
 
 @pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700')])
 def test_cookiefile(request, firmware, password, httpserver, tmp_path):
+    assert os.path.exists(tmp_path)
     cookiefile = tmp_path / "cookiefile.txt"
 
     logger = logging.getLogger('ProSafe_Exporter')
@@ -239,6 +240,11 @@ def test_cookiefile(request, firmware, password, httpserver, tmp_path):
 
     retrieverNew2.retrieve()
     httpserver.check_assertions()
+
+    if os.path.exists(cookiefile):
+        os.remove(cookiefile)
+    assert not os.path.exists(cookiefile)
+        
 
 
 @pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700'),
