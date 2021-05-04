@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased] (Available through Edge Tag)
+### Changed
+- Will login only once and reuse session if possible
+
+### Added
+- Cookies storing session id can be persisted in file
+- Now code has almost 100% test coverage
 
 ## [0.3.0] - 2021-04-30
 ### Added
