@@ -722,9 +722,11 @@ def test_main(parameters, capsys):
         assert pytest_wrapped_exit.value.code == 0
         if '-v' in parameters:
             assert re.match(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Created retriever for host 192\.168\.0\.100 using cookiefile None\n'
+                            r'Created retriever for host 192\.168\.0\.100 using cookiefile (.*)\n'
+                            r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
+                            r'Using cookiefile .*\n)?'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Created retriever for host 192\.168\.0\.200 using cookiefile None\n'
+                            r'Created retriever for host 192\.168\.0\.200 using cookiefile (.*)\n'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
                             r'ProSafeExporter is listening on 0\.0\.0\.0:9493 for request on /metrics endpoint \(but'
                             r' you can also use any other path\)\n'
