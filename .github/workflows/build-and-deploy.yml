@@ -42,7 +42,10 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        echo "TEST" > lala
+        ls
         python3 -m pytest
+        ls
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
       with:
