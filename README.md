@@ -1,4 +1,6 @@
 # prosafe_exporter_python
+[![Build Python Package and Docker Image](https://github.com/tillsteinbach/prosafe_exporter_python/actions/workflows/build-and-deploy.yml/badge.svg)](https://github.com/tillsteinbach/prosafe_exporter_python/actions/workflows/build-and-deploy.yml)
+
 [Prometheus](https://prometheus.io) metrics exporter for NETGEAR switches of the Smart Managed Plus series.
 
 ## Exported Metrics
