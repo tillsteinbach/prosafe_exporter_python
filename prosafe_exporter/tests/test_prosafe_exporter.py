@@ -181,6 +181,7 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
                                           password).respond_with_data(f.readlines(), headers=genSetHeader(cookie))
     retriever._ProSafeRetrieve__login()
 
+    retriever.__del__()
     del retriever
 
     captured = capsys.readouterr()
