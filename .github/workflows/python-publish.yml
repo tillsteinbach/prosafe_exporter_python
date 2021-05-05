@@ -24,16 +24,16 @@ jobs:
       - name: Version from input
         if: github.event_name != 'push'
         run: |
-          VERSION=${{ github.event.inputs.tags }}
+          echo "version=${{ github.event.inputs.tags }}" >> $GITHUB_ENV
       - name: Version from pushed tag
         if: github.event_name == 'push'
         run: |
           # from refs/tags/v1.2.3 get 1.2.3
-          VERSION=$(echo $GITHUB_REF | sed 's#.*/v##')
+          echo "version=$(echo $GITHUB_REF | sed 's#.*/v##')" >> $GITHUB_ENV
       - name: Autobump version
         run: |
           PLACEHOLDER="version='develop'"
-          REPLACEMENT="version='${VERSION}'"
+          REPLACEMENT="version='${{ env.action_state }}'"
           VERSION_FILE="prosafe_exporter/setup.py"
           # ensure the placeholder is there. If grep doesn't find the placeholder
           # it exits with exit code 1 and github actions aborts the build. 
