@@ -6,7 +6,7 @@ on:
       - "v*"
   workflow_dispatch:
     inputs:
-      name:
+      version:
         description: 'Version'
         required: true
         default: '0.0.0'
@@ -24,7 +24,7 @@ jobs:
       - name: Version from input
         if: github.event_name != 'push'
         run: |
-          echo "version=${{ github.event.inputs.tags }}" >> $GITHUB_ENV
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_ENV
       - name: Version from pushed tag
         if: github.event_name == 'push'
         run: |
