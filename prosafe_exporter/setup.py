@@ -12,7 +12,7 @@ TEST_REQUIRED = (HERE / "test_requirements.txt").read_text()
 setup(
     name='prosafe_exporter',
     packages=['prosafe_exporter'],
-    version='develop',
+    version=open("prosafe_exporter/_version.py").readlines()[-1].split()[-1].strip("\"'"),
     description='Prometheus metrics exporter for NETGEAR switches of the Smart Managed Plus series.',
     long_description=README,
     long_description_content_type="text/markdown",

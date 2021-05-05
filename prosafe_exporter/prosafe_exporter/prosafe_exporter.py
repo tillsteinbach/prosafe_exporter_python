@@ -1,5 +1,7 @@
 #!/usr/local/bin/python3
 
+from _version import __version__
+
 import sys
 import flask
 import time
@@ -458,6 +460,8 @@ def main(endless=True, always_early_timeout=False):
         'r'), help='configuration')
     parser.add_argument('-v', '--verbose',
                         help='increase output verbosity', action='store_true')
+    parser.add_argument('--version', action='version',
+                    version='%(prog)s {version}'.format(version=__version__))
     args = parser.parse_args()
 
     logger = logging.getLogger('ProSafe_Exporter')
