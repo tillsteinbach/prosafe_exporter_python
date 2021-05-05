@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.x"
       - name: Version from input
-        if: github.event.inputs.tags
+        if: github.event_name != 'push'
         run: |
           VERSION=${{ github.event.inputs.tags }}
       - name: Version from pushed tag
