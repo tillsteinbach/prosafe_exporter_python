@@ -114,7 +114,7 @@ class ProSafeRetrieve:
                 self.__cookiefd = open(cookiefile, 'w')
                 self.logger.info(
                     'Created retriever for host %s using cookiefile %s', self.hostname, cookiefile)
-            except OSError:
+            except OSError:  # pragma: no cover
                 raise
                 self.logger.info(
                     'Created retriever for host %s but could not use cookiefile %s', self.hostname, cookiefile)
@@ -128,7 +128,7 @@ class ProSafeRetrieve:
                 self.logger.info('Writing cookiefile %s', self.__cookiefd.name)
                 self.__cookiefd.close()
                 self.__cookiefd = None
-            except ValueError as err:
+            except ValueError as err:  # pragma: no cover
                 self.logger.info(
                     'Could not write cookiefile %s for host %s (%s)', self.__cookiefd.name, self.host, str(err))
 

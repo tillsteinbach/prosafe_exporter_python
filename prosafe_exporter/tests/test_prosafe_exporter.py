@@ -263,6 +263,18 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
     #Execute destructor, pytest messes around with the reference count
     retrieverNew2.__del__()
     del retrieverNew2
+    
+    with open(cookiefile, 'w') as f:
+        f.write('{}{}')
+
+    _ = ProSafeRetrieve(
+                hostname='localhost:8888',
+                password='password',
+                logger=logger,
+                retries=2,
+                cookiefile=cookiefile)
+    captured = capsys.readouterr()
+    assert ' could not use cookiefile ' + cookiefile + ' (Extra data)' in captured.err
 
     if os.path.isfile(cookiefile):
         os.remove(cookiefile)
