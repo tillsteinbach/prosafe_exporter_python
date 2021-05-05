@@ -1,24 +1,26 @@
+import pathlib
 from setuptools import find_packages, setup
 
-with open('requirements.txt') as f:
-    install_required = f.read().splitlines()
+# The directory containing this file
+HERE = pathlib.Path(__file__).parent
 
-with open('setup_requirements.txt') as f:
-    setup_required = f.read().splitlines()
-
-with open('test_requirements.txt') as f:
-    test_required = f.read().splitlines()
+README = (HERE / "README.md").read_text()
+INSTALL_REQUIRED = (HERE / "requirements.txt").read_text()
+SETUP_REQUIRED = (HERE / "setup_requirements.txt").read_text()
+TEST_REQUIRED = (HERE / "test_requirements.txt").read_text()
 
 setup(
     name='prosafe_exporter',
     packages=['prosafe_exporter'],
-    version='0.1.0',
+    version='develop',
     description='Prometheus metrics exporter for NETGEAR switches of the Smart Managed Plus series.',
+    long_description=README,
+    long_description_content_type="text/markdown",
     author='Till Steinbach',
     keywords='prometheus, netgear, metrics-exporter, prosafe, prosafe-exporter',
     url='https://github.com/tillsteinbach/prosafe_exporter_python',
     license='MIT',
-    install_requires=install_required,
+    install_requires=INSTALL_REQUIRED,
     entry_points={
         'console_scripts': [
             'prosafe_exporter = prosafe_exporter.prosafe_exporter:main',
@@ -32,6 +34,6 @@ setup(
         'Topic :: System :: Networking :: Monitoring ',
       ],
     python_requires='>=3.6',
-    setup_requires=setup_required,
-    tests_require=test_required,
+    setup_requires=SETUP_REQUIRED,
+    tests_require=TEST_REQUIRED,
 )
