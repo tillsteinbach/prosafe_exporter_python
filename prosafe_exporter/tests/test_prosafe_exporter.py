@@ -152,13 +152,19 @@ def test_standardRequestGood(request, retriever, firmware, password, httpserver)
 
 
 @pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700')])
-def test_cookiefile(request, firmware, password, httpserver):
+def test_cookiefile(request, firmware, password, httpserver, capsys):
     cookiefile = "cookiefile.txt"
     if os.path.isfile(cookiefile):
         os.remove(cookiefile)
 
     logger = logging.getLogger('ProSafe_Exporter')
     logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    logger.addHandler(ch)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     retriever = ProSafeRetrieve(
                 hostname='localhost:8888',
@@ -176,6 +182,9 @@ def test_cookiefile(request, firmware, password, httpserver):
     retriever._ProSafeRetrieve__login()
 
     del retriever
+
+    captured = capsys.readouterr()
+    assert ' Writing cookiefile cookiefile.txt' in captured.err
 
     httpserver.check_assertions()
 
