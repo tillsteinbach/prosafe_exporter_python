@@ -36,7 +36,7 @@ jobs:
       - name: Autobump version
         run: |
           PLACEHOLDER="version='develop'"
-          REPLACEMENT="version='${{ env.action_state }}'"
+          REPLACEMENT="version='${{ env.version }}'"
           VERSION_FILE="setup.py"
           # ensure the placeholder is there. If grep doesn't find the placeholder
           # it exits with exit code 1 and github actions aborts the build. 
