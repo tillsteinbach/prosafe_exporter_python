@@ -127,9 +127,10 @@ class ProSafeRetrieve:
                 json.dump(requests.utils.dict_from_cookiejar(self.__session.cookies), self.__cookiefd)
                 self.logger.info('Writing cookiefile %s', self.__cookiefd.name)
                 self.__cookiefd.close()
+                self.__cookiefd = None
             except ValueError as err:
                 self.logger.info(
-                    'Could not write cookiefile %s for host %s (%s)', self.__cookiefd.name, str(err))
+                    'Could not write cookiefile %s for host %s (%s)', self.__cookiefd.name, self.host, str(err))
 
     def __login(self):
         if self.loggedIn:

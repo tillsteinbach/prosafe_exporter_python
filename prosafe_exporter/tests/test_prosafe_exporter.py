@@ -181,6 +181,7 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
                                           password).respond_with_data(f.readlines(), headers=genSetHeader(cookie))
     retriever._ProSafeRetrieve__login()
 
+    #Execute destructor, pytest messes around with the reference count
     retriever.__del__()
     del retriever
 
@@ -220,6 +221,8 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
 
     retrieverNew.retrieve()
     httpserver.check_assertions()
+    #Execute destructor, pytest messes around with the reference count
+    retrieverNew.__del__()
     del retrieverNew
 
     # Test cookie expired
@@ -257,6 +260,8 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
 
     retrieverNew2.retrieve()
     httpserver.check_assertions()
+    #Execute destructor, pytest messes around with the reference count
+    retrieverNew2.__del__()
     del retrieverNew2
 
     if os.path.isfile(cookiefile):
