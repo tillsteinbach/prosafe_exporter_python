@@ -89,48 +89,62 @@ class ProSafeRetrieve:
         self.requestTimeout = requestTimeout
         self.hostname = hostname
         self.password = password
-        self.session = requests.Session()
+        self.__session = requests.Session()
         self.loggedIn = False
-        self.cookiefile = cookiefile
+        self.__cookiefd = None
         self.infos = None
         self.status = None
         self.statistics = None
         self.result = ""
         self.error = ""
-        self.logger.info(
-            'Created retriever for host %s using cookiefile %s', self.hostname, self.cookiefile)
 
-        if self.cookiefile:
-            if os.path.isfile(self.cookiefile):
-                with open(self.cookiefile, 'r') as f:
-                    cookies = requests.utils.cookiejar_from_dict(json.load(f))
-                    self.session.cookies.update(cookies)
+        if cookiefile:
+            try:
+                try:
+                    self.__cookiefd = open(cookiefile, 'r')
+                    cookies = requests.utils.cookiejar_from_dict(json.load(self.__cookiefd))
+                    self.__session.cookies.update(cookies)
                     self.loggedIn = True
-                    self.logger.info('Using cookiefile %s', self.cookiefile)
-            else:
-                self.logger.info('Cannot use cookiefile %s', self.cookiefile)
+                except json.JSONDecodeError as err:
+                    self.logger.info(
+                        'Created retriever for host %s but could not use cookiefile %s (%s)', self.hostname, cookiefile, err.msg)
+                except FileNotFoundError as err:
+                    self.logger.info(
+                        'Created retriever for host %s but could not use cookiefile %s (%s)', self.hostname, cookiefile, str(err))
+                self.__cookiefd = open(cookiefile, 'w')
+                self.logger.info(
+                    'Created retriever for host %s using cookiefile %s', self.hostname, cookiefile)
+            except OSError:
+                raise
+                self.logger.info(
+                    'Created retriever for host %s but could not use cookiefile %s', self.hostname, cookiefile)
+        else:
+            self.logger.info('Created retriever for host %s', self.hostname)
 
     def __del__(self):
-        if self.cookiefile:
-            with open(self.cookiefile, 'w') as f:
-                json.dump(requests.utils.dict_from_cookiejar(
-                    self.session.cookies), f)
-                self.logger.info('Writing cookiefile %s', self.cookiefile)
+        if self.__cookiefd:
+            try:
+                json.dump(requests.utils.dict_from_cookiejar(self.__session.cookies), self.__cookiefd)
+                self.logger.info('Writing cookiefile %s', self.__cookiefd.name)
+                self.__cookiefd.close()
+            except ValueError as err:
+                self.logger.info(
+                    'Could not write cookiefile %s for host %s (%s)', self.__cookiefd.name, str(err))
 
     def __login(self):
         if self.loggedIn:
-            indexPageRequest = self.session.get(
+            indexPageRequest = self.__session.get(
                 'http://'+self.hostname+'/index.htm', timeout=self.requestTimeout)
             if 'RedirectToLoginPage' not in indexPageRequest.text:
                 self.logger.info('Already logged in for %s', self.hostname)
                 return
             else:
                 # lets start with a new session
-                self.session = requests.Session()
+                self.__session = requests.Session()
                 self.loggedIn = False
                 self.logger.info(
                     'Have to login again for %s due to inactive session', self.hostname)
-        loginPageRequest = self.session.get(
+        loginPageRequest = self.__session.get(
             'http://'+self.hostname+'/login.htm', timeout=self.requestTimeout)
         loginPageRequest.raise_for_status()
 
@@ -156,7 +170,7 @@ class ProSafeRetrieve:
                 'password': password.hexdigest(),
             }
 
-        loginRequest = self.session.post(
+        loginRequest = self.__session.post(
             'http://'+self.hostname+'/login.cgi', data=payload, timeout=self.requestTimeout)
         loginRequest.raise_for_status()
 
@@ -181,7 +195,7 @@ class ProSafeRetrieve:
 
             try:
                 self.__login()
-                infoRequest = self.session.get(
+                infoRequest = self.__session.get(
                     'http://'+self.hostname+'/switch_info.htm', timeout=self.requestTimeout)
                 infoRequest.raise_for_status()
 
@@ -226,7 +240,7 @@ class ProSafeRetrieve:
 
                 retries = self.retries
                 while retries > 0:
-                    statusRequest = self.session.get(
+                    statusRequest = self.__session.get(
                         'http://' + self.hostname + '/status.htm', timeout=self.requestTimeout)
                     statusRequest.raise_for_status()
 
@@ -298,12 +312,12 @@ class ProSafeRetrieve:
                 retries = self.retries
                 while retries > 0:
                     try:
-                        statisticsRequest = self.session.get(
+                        statisticsRequest = self.__session.get(
                             'http://' + self.hostname + '/port_statistics.htm', timeout=self.requestTimeout)
                         statisticsRequest.raise_for_status()
                     # Retry on different URL
                     except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError):
-                        statisticsRequest = self.session.get(
+                        statisticsRequest = self.__session.get(
                             'http://' + self.hostname + '/portStats.htm', timeout=self.requestTimeout)
                         statisticsRequest.raise_for_status()
 

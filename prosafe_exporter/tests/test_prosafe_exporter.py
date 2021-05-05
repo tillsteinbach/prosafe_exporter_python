@@ -6,6 +6,8 @@ import random
 import string
 import yaml
 
+from unittest.mock import patch, mock_open
+
 import logging
 
 from prosafe_exporter.prosafe_exporter import ProSafeRetrieve, main
@@ -152,7 +154,8 @@ def test_standardRequestGood(request, retriever, firmware, password, httpserver)
 @pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700')])
 def test_cookiefile(request, firmware, password, httpserver):
     cookiefile = "cookiefile.txt"
-    assert not os.path.isfile(cookiefile)
+    if os.path.isfile(cookiefile):
+        os.remove(cookiefile)
 
     logger = logging.getLogger('ProSafe_Exporter')
 
@@ -170,10 +173,11 @@ def test_cookiefile(request, firmware, password, httpserver):
         httpserver.expect_ordered_request("/login.cgi", method='POST', data='password=' +
                                           password).respond_with_data(f.readlines(), headers=genSetHeader(cookie))
     retriever._ProSafeRetrieve__login()
+
     del retriever
 
     httpserver.check_assertions()
-    assert os.path.isfile(cookiefile)
+
 
     # Test with old cookie
     retrieverNew = ProSafeRetrieve(
@@ -182,6 +186,7 @@ def test_cookiefile(request, firmware, password, httpserver):
                 logger=logger,
                 retries=2,
                 cookiefile=cookiefile)
+
     with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/index.htm', 'r') as f:
         httpserver.expect_ordered_request("/index.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
@@ -245,8 +250,6 @@ def test_cookiefile(request, firmware, password, httpserver):
 
     if os.path.isfile(cookiefile):
         os.remove(cookiefile)
-    assert not os.path.isfile(cookiefile)
-        
 
 
 @pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700'),
@@ -738,34 +741,28 @@ def test_main(request, parameters, capsys):
         assert pytest_wrapped_exit.type == SystemExit
         assert pytest_wrapped_exit.value.code == 0
         if '-v' in parameters:
-            assert re.match(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Created retriever for host 192\.168\.0\.100 using cookiefile (.*)\n'
-                            r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Cannot use cookiefile .*\n)?'
+            assert re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
+                            r'Created retriever for host (.*)( but could not use cookiefile (.*) \(Expecting value\))?\n)+'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Created retriever for host 192\.168\.0\.200 using cookiefile (.*)\n'
+                            r'Created retriever for host 192\.168\.0\.200\n'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
                             r'ProSafeExporter is listening on 0\.0\.0\.0:9493 for request on /metrics endpoint \(but'
                             r' you can also use any other path\)\n'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
                             r'Retrieving data from all devies\n'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Start retrieval for 192\.168\.0\.100\n'
+                            r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
+                            r'Start retrieval for (.*)\n'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                            r'Connection Error with host 192\.168\.0\.100\n'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Start retrieval for 192\.168\.0\.200\n'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                            r'Connection Error with host 192\.168\.0\.200\n'
+                            r'Connection Error with host (.*)\n)+'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
                             r'Retrieving done\n'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'ProSafeExporter was stopped\n', captured.err)
+                            r'ProSafeExporter was stopped\n'
+                            r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
+                            r'Writing cookiefile (.*)\n)*', captured.err)
         else:
-            assert re.match(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                            r'Connection Error with host 192\.168\.0\.100\n'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                            r'Connection Error with host 192\.168\.0\.200\n', captured.err)
+            assert re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
+                            r'Connection Error with host (.*)\n)+', captured.err)
 
     if config:
         for switch in config['switches']:
