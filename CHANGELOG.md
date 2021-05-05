@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased] (Available through Edge Tag)
+
+## [0.4.0] - 2021-05-05
 ### Changed
 - Will login only once and reuse session if possible
 
@@ -24,7 +26,8 @@ All notable changes to this project will be documented in this file.
 ## [0.1.0] - 2021-04-22
 Initial release to enable "latest" tag on dockerhub
 
-[unreleased]: https://github.com/tillsteinbach/prosafe_exporter_python/compare/v0.3.0...HEAD
+[unreleased]: https://github.com/tillsteinbach/prosafe_exporter_python/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.0
 [0.3.0]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.3.0
 [0.2.0]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.2.0
 [0.1.0]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.1.0
