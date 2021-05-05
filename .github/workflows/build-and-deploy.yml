@@ -14,7 +14,7 @@ on:
 
 jobs:
   build-python:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     defaults:
       run:
         working-directory: prosafe_exporter
