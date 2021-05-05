@@ -32,8 +32,8 @@ jobs:
           VERSION=$(echo $GITHUB_REF | sed 's#.*/v##')
       - name: Autobump version
         run: |
-          PLACEHOLDER='version=\'develop\''
-          VERSION_FILE='prosafe_exporter/setup.py'
+          PLACEHOLDER="version='develop'"
+          VERSION_FILE="prosafe_exporter/setup.py"
           # ensure the placeholder is there. If grep doesn't find the placeholder
           # it exits with exit code 1 and github actions aborts the build. 
           grep "$PLACEHOLDER" "$VERSION_FILE"
