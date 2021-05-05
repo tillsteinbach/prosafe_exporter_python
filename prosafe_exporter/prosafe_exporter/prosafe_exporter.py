@@ -461,7 +461,7 @@ def main(endless=True, always_early_timeout=False):
     parser.add_argument('-v', '--verbose',
                         help='increase output verbosity', action='store_true')
     parser.add_argument('--version', action='version',
-                    version='%(prog)s {version}'.format(version=__version__))
+                        version='%(prog)s {version}'.format(version=__version__))
     args = parser.parse_args()
 
     logger = logging.getLogger('ProSafe_Exporter')
