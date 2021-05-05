@@ -1,6 +1,6 @@
 #!/usr/local/bin/python3
 
-from _version import __version__
+from ._version import __version__
 
 import sys
 import flask

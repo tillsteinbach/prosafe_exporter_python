@@ -742,7 +742,7 @@ def test_main(request, parameters, capsys):
         assert pytest_wrapped_exit.type == SystemExit
         assert pytest_wrapped_exit.value.code == 2
         assert re.match(
-            r'usage: prosafe_exporter \[-h\] \[-v\] config\n'
+            r'usage: prosafe_exporter \[-h\] \[-v\] \[--version\] config\n'
             r'prosafe_exporter: error: argument config: can\'t open \'(.*)\': \[Errno 2\] No such file or directory:'
             r' \'(.*)\'\n',
             captured.err)
