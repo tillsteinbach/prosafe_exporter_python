@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      name:
+        description: 'Version'
+        required: true
+        default: '0.0.0'
 
 jobs:
   deploy:
@@ -16,10 +21,17 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.x"
-      - name: Autobump version
+      - name: Version from input
+        if: github.event.inputs.tags
+        run: |
+          VERSION=${{ github.event.inputs.tags }}
+      - name: Version from pushed tag
+        if: github.event_name == 'push'
         run: |
           # from refs/tags/v1.2.3 get 1.2.3
           VERSION=$(echo $GITHUB_REF | sed 's#.*/v##')
+      - name: Autobump version
+        run: |
           PLACEHOLDER='version=\'develop\''
           VERSION_FILE='prosafe_exporter/setup.py'
           # ensure the placeholder is there. If grep doesn't find the placeholder
