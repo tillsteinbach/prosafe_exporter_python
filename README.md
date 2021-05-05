@@ -7,6 +7,7 @@
 ![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/tillsteinbach/prosafe_exporter_python?sort=semver)
 [![Docker Pulls](https://img.shields.io/docker/pulls/tillsteinbach/prosafe_exporter_python)](https://hub.docker.com/r/tillsteinbach/prosafe_exporter_python)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/prosafe-exporter)](https://pypi.org/project/prosafe-exporter/)
+[![Donate at PayPal](https://img.shields.io/badge/Donate-PayPal-2997d8)](https://www.paypal.com/donate?hosted_button_id=2BVFF5GJ9SXAJ)
 
 [Prometheus](https://prometheus.io) metrics exporter for NETGEAR switches of the Smart Managed Plus series.
 
