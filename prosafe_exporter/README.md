@@ -1,4 +1,10 @@
 # prosafe_exporter_python
+[![GitHub sourcecode](https://img.shields.io/badge/Source-GitHub-green)](https://github.com/tillsteinbach/prosafe_exporter_python/)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/tillsteinbach/prosafe_exporter_python)](https://github.com/tillsteinbach/prosafe_exporter_python/releases/latest)
+[![GitHub](https://img.shields.io/github/license/tillsteinbach/prosafe_exporter_python)](https://github.com/tillsteinbach/prosafe_exporter_python/blob/master/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/tillsteinbach/prosafe_exporter_python)](https://github.com/tillsteinbach/prosafe_exporter_python/issues)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/prosafe-exporter)](https://pypi.org/project/prosafe-exporter/)
+
 [Prometheus](https://prometheus.io) metrics exporter for NETGEAR switches of the Smart Managed Plus series.
 
 ## Exported Metrics
