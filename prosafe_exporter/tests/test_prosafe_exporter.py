@@ -181,7 +181,7 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
                                           password).respond_with_data(f.readlines(), headers=genSetHeader(cookie))
     retriever._ProSafeRetrieve__login()
 
-    #Execute destructor, pytest messes around with the reference count
+    # Execute destructor, pytest messes around with the reference count
     retriever.__del__()
     del retriever
 
@@ -189,7 +189,6 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
     assert ' Writing cookiefile cookiefile.txt' in captured.err
 
     httpserver.check_assertions()
-
 
     # Test with old cookie
     retrieverNew = ProSafeRetrieve(
@@ -221,7 +220,7 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
 
     retrieverNew.retrieve()
     httpserver.check_assertions()
-    #Execute destructor, pytest messes around with the reference count
+    # Execute destructor, pytest messes around with the reference count
     retrieverNew.__del__()
     del retrieverNew
 
@@ -260,10 +259,10 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
 
     retrieverNew2.retrieve()
     httpserver.check_assertions()
-    #Execute destructor, pytest messes around with the reference count
+    # Execute destructor, pytest messes around with the reference count
     retrieverNew2.__del__()
     del retrieverNew2
-    
+
     with open(cookiefile, 'w') as f:
         f.write('{}{}')
 
@@ -305,6 +304,7 @@ def test_loginError(request, retriever, firmware, password, httpserver):
 
     retriever.writeResult()
     assert retriever.result == '# ERROR: ' + retriever.error + '\n'
+
 
 @pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
 @pytest.mark.parametrize('fails', [(1), (2)])
@@ -348,6 +348,7 @@ def test_partOfStatusMissing(request, retriever, firmware,  password, httpserver
 
     retriever.writeResult()
 
+
 @pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
 def test_oneTXMissing(request, retriever, firmware,  password, httpserver):
     cookie = generateCookie()
@@ -368,7 +369,8 @@ def test_oneTXMissing(request, retriever, firmware,  password, httpserver):
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(badResponse)
     else:
-        with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/bad/port_statistics.htm_oneTXMissing', 'r') as f:
+        with open(str(request.config.rootdir)+'/tests/responses/' + firmware
+                  + '/bad/port_statistics.htm_oneTXMissing', 'r') as f:
             badResponse = f.readlines()
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(badResponse)
@@ -378,7 +380,7 @@ def test_oneTXMissing(request, retriever, firmware,  password, httpserver):
 
     checkInfos(retriever.infos, firmware)
     checkStatus(retriever.status, firmware)
-    
+
     assert retriever.statistics is None
     assert retriever.error == 'Could not retrieve correct statistics for ' + retriever.hostname + \
                               ' after ' + str(retriever.retries) + ' retries.  This can happen when there is much' \
@@ -403,17 +405,19 @@ def test_firstPortMissing(request, retriever, firmware,  password, httpserver):
     if firmware in ['V2.06.14EN']:
         httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data('', status=500)
-        with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/bad/portStats.htm_firstPortMissing', 'r') as f:
+        with open(str(request.config.rootdir)+'/tests/responses/' + firmware
+                  + '/bad/portStats.htm_firstPortMissing', 'r') as f:
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
-        with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/bad/port_statistics.htm_firstPortMissing', 'r') as f:
+        with open(str(request.config.rootdir)+'/tests/responses/' + firmware
+                  + '/bad/port_statistics.htm_firstPortMissing', 'r') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     retriever.retrieve()
 
     checkInfos(retriever.infos, firmware)
-    
+
     assert retriever.status is None and retriever.statistics is None
 
     httpserver.check_assertions()
@@ -434,17 +438,19 @@ def test_lastPortMissing(request, retriever, firmware, password, httpserver):
     if firmware in ['V2.06.14EN']:
         httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data('', status=500)
-        with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/bad/portStats.htm_lastPortMissing', 'r') as f:
+        with open(str(request.config.rootdir)+'/tests/responses/' + firmware
+                  + '/bad/portStats.htm_lastPortMissing', 'r') as f:
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
-        with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/bad/port_statistics.htm_lastPortMissing', 'r') as f:
+        with open(str(request.config.rootdir)+'/tests/responses/' + firmware
+                  + '/bad/port_statistics.htm_lastPortMissing', 'r') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     retriever.retrieve()
 
     checkInfos(retriever.infos, firmware)
-    
+
     assert retriever.status is None and retriever.statistics is None
 
     httpserver.check_assertions()
@@ -717,7 +723,7 @@ def test_main(request, parameters, capsys):
 
                 if 'password:' in configContent:
                     exitSwitchesPasswordMissing = False
-                
+
                 if 'cookiefile:' in configContent:
                     config = yaml.load(configContent, Loader=yaml.SafeLoader)
                     assert config
@@ -770,7 +776,8 @@ def test_main(request, parameters, capsys):
         assert pytest_wrapped_exit.value.code == 0
         if '-v' in parameters:
             assert re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Created retriever for host (.*)( but could not use cookiefile (.*) \(Expecting value\))?\n)+'
+                            r'Created retriever for host (.*)( but could not use cookiefile (.*) '
+                            r'\(Expecting value\))?\n)+'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
                             r'Created retriever for host 192\.168\.0\.200\n'
                             r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '

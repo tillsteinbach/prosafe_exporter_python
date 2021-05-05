@@ -106,11 +106,11 @@ class ProSafeRetrieve:
                     self.__session.cookies.update(cookies)
                     self.loggedIn = True
                 except json.JSONDecodeError as err:
-                    self.logger.info(
-                        'Created retriever for host %s but could not use cookiefile %s (%s)', self.hostname, cookiefile, err.msg)
+                    self.logger.info('Created retriever for host %s but could not use cookiefile %s (%s)',
+                                     self.hostname, cookiefile, err.msg)
                 except FileNotFoundError as err:
-                    self.logger.info(
-                        'Created retriever for host %s but could not use cookiefile %s (%s)', self.hostname, cookiefile, str(err))
+                    self.logger.info('Created retriever for host %s but could not use cookiefile %s (%s)',
+                                     self.hostname, cookiefile, str(err))
                 self.__cookiefd = open(cookiefile, 'w')
                 self.logger.info(
                     'Created retriever for host %s using cookiefile %s', self.hostname, cookiefile)
@@ -304,7 +304,8 @@ class ProSafeRetrieve:
                     retries -= 1
                 if retries == 0:
                     self.status = None
-                    self.error = 'Could not retrieve correct status for ' + self.hostname + ' after ' + str(self.retries) + \
+                    self.error = 'Could not retrieve correct status for ' + self.hostname + ' after ' \
+                        + str(self.retries) + \
                         ' retries. This can happen when there is much traffic on the device, but it is more likely' \
                         ' that the firmware is not understood'
                     self.logger.error(self.error)
