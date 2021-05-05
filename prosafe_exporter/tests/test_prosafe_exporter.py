@@ -158,6 +158,7 @@ def test_cookiefile(request, firmware, password, httpserver):
         os.remove(cookiefile)
 
     logger = logging.getLogger('ProSafe_Exporter')
+    logger.setLevel(logging.INFO)
 
     retriever = ProSafeRetrieve(
                 hostname='localhost:8888',
