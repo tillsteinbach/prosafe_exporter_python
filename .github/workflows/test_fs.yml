@@ -12,6 +12,9 @@ on:
 jobs:
   build-python:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
