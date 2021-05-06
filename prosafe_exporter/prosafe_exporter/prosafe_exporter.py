@@ -42,9 +42,8 @@ class ProSafeExporter:
 
         webthread = threading.Thread(target=server.serve_forever)
         webthread.start()
-        self.logger.info(
-            f'ProSafeExporter is listening on {host}:{port} for request on /metrics endpoint'
-            ' (but you can also use any other path)')
+        self.logger.info('ProSafeExporter is listening on %s:%s for request on /metrics endpoint'
+                         ' (but you can also use any other path)', host, port)
 
         try:
             self.__retrieve()
@@ -61,7 +60,7 @@ class ProSafeExporter:
         result = "# Exporter output\n\n"
         for retriever in self.retrievers:
             result += retriever.result + '\n\n'
-        self.logger.info(f'Request on endpoint /{path} \n{result}')
+        self.logger.info('Request on endpoint /%s \n%s', path, result)
         return flask.Response(result, status=200, headers={})
 
     def __retrieve(self):
@@ -71,7 +70,7 @@ class ProSafeExporter:
                 retriever.retrieve()
             except (ConnectionRefusedError, requests.exceptions.ConnectionError):
                 self.logger.error(
-                    f'Failed to refrieve for host {retriever.hostname}')
+                    'Failed to refrieve for host %s', retriever.hostname)
             retriever.writeResult()
         self.logger.info('Retrieving done')
 
@@ -94,7 +93,7 @@ class ProSafeRetrieve:
         self.password = password
         self.__session = requests.Session()
         self.loggedIn = False
-        self.__cookiefd = None
+        self.cookieFile = None
         self.__infos = None
         self.__status = None
         self.__statistics = None
@@ -104,46 +103,46 @@ class ProSafeRetrieve:
         if cookiefile:
             try:
                 try:
-                    self.__cookiefd = open(cookiefile, 'r')
-                    cookies = requests.utils.cookiejar_from_dict(json.load(self.__cookiefd))
+                    with open(cookiefile, 'r') as file:
+                        cookies = requests.utils.cookiejar_from_dict(json.load(file))
                     self.__session.cookies.update(cookies)
                     self.loggedIn = True
                 except json.JSONDecodeError as err:
-                    self.logger.info(f'Created retriever for host {self.hostname}'
-                                     f' but could not use cookiefile {cookiefile} ({err.msg})')
+                    self.logger.info('Created retriever for host %s'
+                                     ' but could not use cookiefile %s (%s)', self.hostname, cookiefile, err.msg)
                 except FileNotFoundError as err:
-                    self.logger.info(f'Created retriever for host {self.hostname}'
-                                     f' but could not use cookiefile {cookiefile} ({err})')
-                self.__cookiefd = open(cookiefile, 'w')
-                self.logger.info(f'Created retriever for host {self.hostname} using cookiefile {cookiefile}')
+                    self.logger.info('Created retriever for host %s'
+                                     ' but could not use cookiefile %s (%s)', self.hostname, cookiefile, err)
+                self.cookieFile = cookiefile
+                self.logger.info('Created retriever for host %s using cookiefile %s', self.hostname, cookiefile)
             except OSError:  # pragma: no cover
-                self.logger.info(f'Created retriever for host {self.hostname}'
-                                 f' but could not use cookiefile {cookiefile}')
+                self.logger.info('Created retriever for host %s'
+                                 ' but could not use cookiefile %s', self.hostname, cookiefile)
         else:
-            self.logger.info(f'Created retriever for host {self.hostname}')
+            self.logger.info('Created retriever for host %s', self.hostname)
 
     def __del__(self):
-        if self.__cookiefd:
+        if self.cookieFile:
             try:
-                json.dump(requests.utils.dict_from_cookiejar(self.__session.cookies), self.__cookiefd)
-                self.logger.info(f'Writing cookiefile {self.__cookiefd.name}')
-                self.__cookiefd.close()
+                with open(self.cookieFile, 'w') as file:
+                    json.dump(requests.utils.dict_from_cookiejar(self.__session.cookies), file)
+                self.logger.info('Writing cookiefile %s', self.cookieFile)
                 self.__cookiefd = None
             except ValueError as err:  # pragma: no cover
-                self.logger.info(f'Could not write cookiefile {self.__cookiefd.name} for host {self.hostname} ({err})')
+                self.logger.info('Could not write cookiefile %s for host %s (%s)',
+                                 self.__cookiefd.name, self.hostname, err)
 
     def __login(self):
         if self.loggedIn:
             indexPageRequest = self.__session.get(
                 f'http://{self.hostname}/index.htm', timeout=self.requestTimeout)
             if 'RedirectToLoginPage' not in indexPageRequest.text:
-                self.logger.info(f'Already logged in for {self.hostname}')
+                self.logger.info('Already logged in for %s', self.hostname)
                 return
-            else:
-                # lets start with a new session
-                self.__session = requests.Session()
-                self.loggedIn = False
-                self.logger.info(f'Have to login again for {self.hostname} due to inactive session')
+            # lets start with a new session
+            self.__session = requests.Session()
+            self.loggedIn = False
+            self.logger.info('Have to login again for %s due to inactive session', self.hostname)
         loginPageRequest = self.__session.get(
             f'http://{self.hostname}/login.htm', timeout=self.requestTimeout)
         loginPageRequest.raise_for_status()
@@ -153,8 +152,8 @@ class ProSafeRetrieve:
         payload = None
         if len(rand) != 1:
             # looks like an old firmware without seed
-            self.logger.warning(f'Your switch {self.hostname} uses an old firmware which sends your password'
-                                ' unencrypted while retrieving data. Please conscider updating')
+            self.logger.warning('Your switch %s uses an old firmware which sends your password'
+                                ' unencrypted while retrieving data. Please conscider updating', self.hostname)
 
             payload = {
                 'password': self.password,
@@ -179,8 +178,7 @@ class ProSafeRetrieve:
             self.error = f'I could not login at the switch {self.hostname} due to: {errorMsg[0]}'
             self.logger.error(self.error)
             raise ConnectionRefusedError(self.error)
-        else:
-            self.loggedIn = True
+        self.loggedIn = True
 
     def __retrieveInfos(self):  # noqa: C901
         infoRequest = self.__session.get(f'http://{self.hostname}/switch_info.htm', timeout=self.requestTimeout)
@@ -277,8 +275,8 @@ class ProSafeRetrieve:
                 self.__status = [[speedmap[n] if i == 2 else n for i,
                                   n in enumerate(portStatus)] for portStatus in self.__status]
                 break
-            self.logger.info(f'Problem while retrieving status for {self.hostname}'
-                             ' this can happen when there is much traffic on the device')
+            self.logger.info('Problem while retrieving status for %s'
+                             ' this can happen when there is much traffic on the device', self.hostname)
             retries -= 1
         if retries == 0:
             self.__status = None
@@ -327,8 +325,8 @@ class ProSafeRetrieve:
                     noProblem = False
             if noProblem:
                 break
-            self.logger.info(f'Problem while retrieving statistics for {self.hostname}'
-                             ' this can happen when there is much traffic on the device')
+            self.logger.info('Problem while retrieving statistics for %s'
+                             ' this can happen when there is much traffic on the device', self.hostname)
             retries -= 1
         if retries == 0:
             self.__statistics = None
@@ -367,7 +365,7 @@ class ProSafeRetrieve:
                     self.logger.error(self.error)
                     return
 
-                self.logger.info(f'Retrieval for {self.hostname} done')
+                self.logger.info('Retrieval for %s done', self.hostname)
 
             except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError):
                 self.__infos = None
