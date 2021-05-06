@@ -1,13 +1,11 @@
-import pytest
-import sys
-
 import logging
+import pytest
 
 from prosafe_exporter.prosafe_exporter import ProSafeExporter, ProSafeRetrieve
 
 
-@pytest.fixture
-def client():
+@pytest.fixture(name='client')
+def fixture_client():
     logger = logging.getLogger('ProSafe_Exporter')
 
     exporter = ProSafeExporter(retrievers=[], logger=logger)
@@ -16,16 +14,15 @@ def client():
         yield (exporter, client)
 
 
-@pytest.fixture
-def retriever():
+@pytest.fixture(name='retriever')
+def fixture_retriever():
     logger = logging.getLogger('ProSafe_Exporter')
 
-    retriever = ProSafeRetrieve(
-                hostname='localhost:8888',
-                password='password',
-                logger=logger,
-                retries=2)
-    yield retriever
+    retrieverFixture = ProSafeRetrieve(hostname='localhost:8888',
+                                       password='password',
+                                       logger=logger,
+                                       retries=2)
+    yield retrieverFixture
 
 
 def test_empty(client):
@@ -59,16 +56,15 @@ def test_withRetrieveException(request, client, retriever, httpserver, firmware)
     exporter = client[0]
 
     exporter.retrievers = [retriever]
-
-    with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
         httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
-    with open(str(request.config.rootdir)+'/tests/responses/'+firmware+'/good/index.htm_redirect', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
 
     exporter._ProSafeExporter__retrieve()
 
     rv = client[1].get('/metrics')
-    assert rv.data == (b'# Exporter output\n\n# ERROR: Login failed for ' +
-                       bytes(retriever.hostname, encoding='utf-8') + b'\n\n\n')
+    assert rv.data == (b'# Exporter output\n\n# ERROR: Login failed for '
+                       + bytes(retriever.hostname, encoding='utf-8') + b'\n\n\n')

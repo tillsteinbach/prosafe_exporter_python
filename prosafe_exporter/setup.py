@@ -1,5 +1,5 @@
 import pathlib
-from setuptools import find_packages, setup
+from setuptools import setup
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -32,7 +32,7 @@ setup(
         'Intended Audience :: System Administrators',
         'Programming Language :: Python :: 3.6',
         'Topic :: System :: Networking :: Monitoring ',
-      ],
+    ],
     python_requires='>=3.6',
     setup_requires=SETUP_REQUIRED,
     tests_require=TEST_REQUIRED,
