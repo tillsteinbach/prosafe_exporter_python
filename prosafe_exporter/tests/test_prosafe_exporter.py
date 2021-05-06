@@ -692,7 +692,7 @@ def test_write(retriever, firmware, vectorLengthZero):
                           ['tests/configs/good/standard.yml'],
                           ['tests/configs/good/defaults.yml'],
                           ['-v', 'tests/configs/good/standard.yml']])
-def test_main(request, parameters, capsys):
+def test_main(request, parameters, capsys):  # noqa: C901
     sys.argv = ["prosafe_exporter"]
     for parameter in parameters:
         sys.argv.append(parameter)
