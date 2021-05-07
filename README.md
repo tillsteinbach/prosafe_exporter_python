@@ -6,6 +6,7 @@
 [![GitHub issues](https://img.shields.io/github/issues/tillsteinbach/prosafe_exporter_python)](https://github.com/tillsteinbach/prosafe_exporter_python/issues)
 [![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/tillsteinbach/prosafe_exporter_python?sort=semver)](https://hub.docker.com/r/tillsteinbach/prosafe_exporter_python)
 [![Docker Pulls](https://img.shields.io/docker/pulls/tillsteinbach/prosafe_exporter_python)](https://hub.docker.com/r/tillsteinbach/prosafe_exporter_python)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/prosafe_exporter?label=PyPI%20Downloads)](https://pypi.org/project/prosafe-exporter/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/prosafe-exporter)](https://pypi.org/project/prosafe-exporter/)
 [![Donate at PayPal](https://img.shields.io/badge/Donate-PayPal-2997d8)](https://www.paypal.com/donate?hosted_button_id=2BVFF5GJ9SXAJ)
 [![Sponsor at Github](https://img.shields.io/badge/Sponsor-GitHub-28a745)](https://github.com/sponsors/tillsteinbach)
