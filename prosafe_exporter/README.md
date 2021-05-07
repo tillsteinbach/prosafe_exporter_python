@@ -67,7 +67,7 @@ rate(prosafe_transmit_bytes_total{instance="192.168.0.123", port="1"}[1m])
 ```
 ### Grafana Screenshot
 This is how the data could look like in Grafana:
-![Grafana Screenshot](https://github.com/tillsteinbach/prosafe_exporter_python/raw/master/screenshots/grafana_example.PNG)
+[![Grafana Screenshot](https://github.com/tillsteinbach/prosafe_exporter_python/raw/master/screenshots/grafana_example.PNG)](https://github.com/tillsteinbach/prosafe_exporter_python/raw/master/screenshots/grafana_example.PNG)
 
 ## Tested Switches
 The following Switches are continously tested with real hardware:
