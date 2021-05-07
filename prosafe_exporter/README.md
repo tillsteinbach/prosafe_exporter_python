@@ -11,7 +11,7 @@
 Open metrics exporter for NETGEAR switches of the Smart Managed Plus series to provide data to databases such as [Prometheus](https://prometheus.io) or [InfluxDB](https://www.influxdata.com/).
 
 ## What is the purpose?
-NETGEAR switches of the [Smart Managed Plus series](https://www.netgear.de/business/products/switches/web-managed/) do not provide a standards conform interface for providing statistics of traffic and other information. There is no support for monitoring protocols such as [SNMP](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol). Still these switches are deployed in large numbers in professional and private environments where monitoring of the switches is highly desired. A common solution for monitoring is to store the data in a [Prometheus](https://prometheus.io) database and visualize and alert with tools such as [Grafana](https://grafana.com/). prosafe_exporter_python provides a tool that colelcts the data from the switches webinterface and provides it using the [OpenMetrics format](https://openmetrics.io/) that can be directly used in prometheus or influx scrape jobs.
+NETGEAR switches of the [Smart Managed Plus series](https://www.netgear.de/business/products/switches/web-managed/) do not provide a standards conform interface for providing statistics of traffic and other information. There is no support for monitoring protocols such as [SNMP](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol). Still these switches are deployed in large numbers in professional and private environments where monitoring of the switches is highly desired. A common solution for monitoring is to store the data in a [Prometheus](https://prometheus.io) database and visualize and alert with tools such as [Grafana](https://grafana.com/). prosafe_exporter_python provides a tool that colelcts the data from the switches webinterface and provides it using the [OpenMetrics format](https://openmetrics.io/) that can be directly used in [Prometheus](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) or [Influx scrape jobs](https://docs.influxdata.com/influxdb/v2.0/write-data/no-code/scrape-data/manage-scrapers/create-a-scraper/).
 
 ## Exported Metrics
 
@@ -54,7 +54,8 @@ scrape_configs:
     metrics_path: /probe
     scrape_interval: 60s
 ```
-## Query Example
+In InfluxDB configure a scrape job like this: [Influx scrape configuration](https://docs.influxdata.com/influxdb/v2.0/write-data/no-code/scrape-data/manage-scrapers/create-a-scraper/)
+## Query Example for Grafana
 Outgoing data rate of port `1` on `192.168.0.123` is below.
 ```
 rate(prosafe_transmit_bytes_total{instance="192.168.0.123", port="1"}[1m])
