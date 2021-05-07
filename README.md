@@ -66,6 +66,12 @@ scrape_configs:
     scrape_interval: 60s
 ```
 In InfluxDB configure a scrape job like this: [Influx scrape configuration](https://docs.influxdata.com/influxdb/v2.0/write-data/no-code/scrape-data/manage-scrapers/create-a-scraper/)
+
+## Without Docker
+If you don't want to use docker you can obtain prosafe_exporter also as a stand-alone application from [PyPI](https://pypi.org/project/prosafe-exporter/). Just install instead using:
+```bash
+pip install prosafe-exporter
+```
 ## Query Example for Grafana
 Outgoing data rate of port `1` on `192.168.0.123` is below.
 ```
