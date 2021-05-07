@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased] (Available through Edge Tag)
+## [0.4.2] - 2021-05-07
+### Changed
+- Fixed issues colected in static analysis
+
 ## [0.4.1] - 2021-05-05
 ### Added
 - "--version" command
@@ -28,7 +32,8 @@ All notable changes to this project will be documented in this file.
 ## [0.1.0] - 2021-04-22
 Initial release to enable "latest" tag on dockerhub
 
-[unreleased]: https://github.com/tillsteinbach/prosafe_exporter_python/compare/v0.4.1...HEAD
+[unreleased]: https://github.com/tillsteinbach/prosafe_exporter_python/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.2
 [0.4.1]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.1
 [0.4.0]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.0
 [0.3.0]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.3.0
