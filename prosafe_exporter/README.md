@@ -56,6 +56,10 @@ scrape_configs:
     scrape_interval: 60s
 ```
 In InfluxDB configure a scrape job like this: [Influx scrape configuration](https://docs.influxdata.com/influxdb/v2.0/write-data/no-code/scrape-data/manage-scrapers/create-a-scraper/)
+
+## Docker
+prosafe_exporter is also available as a stand-alone docker container from [DockerHub](https://hub.docker.com/r/tillsteinbach/prosafe_exporter_python)
+
 ## Query Example for Grafana
 Outgoing data rate of port `1` on `192.168.0.123` is below.
 ```
@@ -74,8 +78,7 @@ Other Devices can be regression tested with prerecorded datasets. If you want to
 - V2.06.14EN
 -	V2.06.03EN
 
-If you want to contribute with data from a switch not listed here
-, please contact me or open an [issue](https://github.com/tillsteinbach/prosafe_exporter_python/issues).
+If you want to contribute with data from a switch not listed here, please contact me or open an [issue](https://github.com/tillsteinbach/prosafe_exporter_python/issues).
 
 ## Reporting Issues
 Please feel free to open an issue at [GitHub Issue page](https://github.com/tillsteinbach/prosafe_exporter_python/issues) to report problems you found.
