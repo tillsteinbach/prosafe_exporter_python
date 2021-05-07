@@ -8,6 +8,8 @@ RUN apk add --no-cache --virtual .build-deps gcc libc-dev libxml2-dev libxslt-de
     apk add --no-cache libxslt && \
     pip install --upgrade pip && \
     pip install -r ./prosafe_exporter/requirements.txt && \
+    pip install -r ./prosafe_exporter/setup_requirements.txt && \
+    pip install -r ./prosafe_exporter/test_requirements.txt && \
     pip install ./prosafe_exporter/ && \
     apk del .build-deps
 
