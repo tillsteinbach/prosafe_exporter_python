@@ -8,7 +8,10 @@
 [![Donate at PayPal](https://img.shields.io/badge/Donate-PayPal-2997d8)](https://www.paypal.com/donate?hosted_button_id=2BVFF5GJ9SXAJ)
 [![Sponsor at Github](https://img.shields.io/badge/Sponsor-GitHub-28a745)](https://github.com/sponsors/tillsteinbach)
 
-[Prometheus](https://prometheus.io) metrics exporter for NETGEAR switches of the Smart Managed Plus series.
+Open metrics exporter for NETGEAR switches of the Smart Managed Plus series to provide data to databases such as [Prometheus](https://prometheus.io) or [InfluxDB](https://www.influxdata.com/).
+
+## What is the purpose?
+NETGEAR switches of the [Smart Managed Plus series](https://www.netgear.de/business/products/switches/web-managed/) do not provide a standards conform interface for providing statistics of traffic and other information. There is no support for monitoring protocols such as [SNMP](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol). Still these switches are deployed in large numbers in professional and private environments where monitoring of the switches is highly desired. A common solution for monitoring is to store the data in a [Prometheus](https://prometheus.io) database and visualize and alert with tools such as [Grafana](https://grafana.com/). prosafe_exporter_python provides a tool that colelcts the data from the switches webinterface and provides it using the [OpenMetrics format](https://openmetrics.io/) that can be directly used in prometheus or influx scrape jobs.
 
 ## Exported Metrics
 
@@ -58,15 +61,24 @@ rate(prosafe_transmit_bytes_total{instance="192.168.0.123", port="1"}[1m])
 ```
 
 ## Tested Switches
+The following Switches are continously tested with real hardware:
 - GS108Ev3
 - GS108PEv3
+
+Other Devices can be regression tested with prerecorded datasets. If you want to contribute with data from a switch not listed, please contact me or open an [issue](https://github.com/tillsteinbach/prosafe_exporter_python/issues).
 
 ## Tested Firmware
 - V2.06.14GR
 - V2.06.14EN
 -	V2.06.03EN
 
-## Known Issues
+If you want to contribute with data from a switch not listed here
+, please contact me or open an [issue](https://github.com/tillsteinbach/prosafe_exporter_python/issues).
+
+## Reporting Issues
+Please feel free to open an issue at [GitHub Issue page](https://github.com/tillsteinbach/prosafe_exporter_python/issues) to report problems you found.
+
+### Known Issues
 - May not work with older firmware, not all firmware versions are tested
 - Does not work with Japanese firmware
 
