@@ -78,7 +78,7 @@ Outgoing data rate of port `1` on `192.168.0.123` is below.
 rate(prosafe_transmit_bytes_total{instance="192.168.0.123", port="1"}[1m])
 ```
 ### Grafana Screenshot
-This is how the data could look like in Grafana:
+This is how the data could look like in Grafana with an [example configuration](https://github.com/tillsteinbach/prosafe_exporter_python/blob/master/examples/grafana/dashboard_example.json):
 [![Grafana Screenshot](https://github.com/tillsteinbach/prosafe_exporter_python/raw/master/screenshots/grafana_example.PNG)](https://github.com/tillsteinbach/prosafe_exporter_python/raw/master/screenshots/grafana_example.PNG)
 
 ## Tested Switches
