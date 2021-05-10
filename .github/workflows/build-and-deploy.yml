@@ -11,6 +11,11 @@ on:
      - .github/workflows/build-and-deploy.yml
      - prosafe_exporter/**
      - Dockerfile
+  pull_request:
+    paths:
+     - .github/workflows/build-and-deploy.yml
+     - prosafe_exporter/**
+     - Dockerfile
 
 jobs:
   build-python:
