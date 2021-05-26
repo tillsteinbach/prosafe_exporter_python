@@ -4,10 +4,10 @@ on:
   push:
     branches: [ master ]
     paths:
-       - '**.js'
+       - '**.py'
   pull_request:
     paths:
-       - '**.js'
+       - '**.py'
   schedule:
     - cron: '33 5 * * 0'
 
