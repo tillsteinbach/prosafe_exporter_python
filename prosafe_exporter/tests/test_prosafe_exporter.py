@@ -14,15 +14,7 @@ from prosafe_exporter.prosafe_exporter import ProSafeRetrieve, main
 # seed random to generate same sequence every time the test runs to make it deterministic
 random.seed(1)
 
-
-@pytest.fixture(autouse=True)
-def loggerCleanup():
-    yield
-    loggers = [logging.getLogger()] + list(logging.Logger.manager.loggerDict.values())
-    for logger in loggers:
-        handlers = getattr(logger, 'handlers', [])
-        for handler in handlers:
-            logger.removeHandler(handler)
+logging.basicConfig(level=logging.INFO)
 
 
 @pytest.fixture(scope="session")
@@ -32,11 +24,9 @@ def httpserver_listen_address():
 
 @pytest.fixture(name='retriever')
 def fixture_retriever():
-    logger = logging.getLogger('ProSafe_Exporter')
 
     retriever = ProSafeRetrieve(hostname='localhost:8888',
                                 password='password',
-                                logger=logger,
                                 retries=2)
     yield retriever
 
@@ -150,23 +140,13 @@ def test_standardRequestGood(request, retriever, firmware, password, httpserver)
 
 
 @pytest.mark.parametrize('firmware, password', [('V2.06.14GR', '5fd34891e0221be7a1dcbd78ae81a700')])
-def test_cookiefile(request, firmware, password, httpserver, capsys):
+def test_cookiefile(request, firmware, password, httpserver, caplog):
     cookiefile = "cookiefile.txt"
     if os.path.isfile(cookiefile):
         os.remove(cookiefile)
 
-    logger = logging.getLogger('ProSafe_Exporter')
-    logger.setLevel(logging.INFO)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    logger.addHandler(ch)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
     retriever = ProSafeRetrieve(hostname='localhost:8888',
                                 password='password',
-                                logger=logger,
                                 retries=2,
                                 cookiefile=cookiefile)
 
@@ -178,19 +158,18 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
             f.readlines(), headers=genSetHeader(cookie))
     retriever._ProSafeRetrieve__login()  # pylint: disable=no-member
 
+    LOG = logging.getLogger("ProSafeExporter")
+    LOG.setLevel(level=logging.INFO)
     # Execute destructor, pytest messes around with the reference count
     retriever.__del__()
     del retriever
-
-    captured = capsys.readouterr()
-    assert ' Writing cookiefile cookiefile.txt' in captured.err
+    assert ' Writing cookiefile cookiefile.txt' in caplog.text
 
     httpserver.check_assertions()
 
     # Test with old cookie
     retrieverNew = ProSafeRetrieve(hostname='localhost:8888',
                                    password='password',
-                                   logger=logger,
                                    retries=2,
                                    cookiefile=cookiefile)
 
@@ -224,7 +203,6 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
     cookieNew = generateCookie()
     retrieverNew2 = ProSafeRetrieve(hostname='localhost:8888',
                                     password='password',
-                                    logger=logger,
                                     retries=2,
                                     cookiefile=cookiefile)
     with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r') as f:
@@ -263,11 +241,11 @@ def test_cookiefile(request, firmware, password, httpserver, capsys):
 
     _ = ProSafeRetrieve(hostname='localhost:8888',
                         password='password',
-                        logger=logger,
                         retries=2,
                         cookiefile=cookiefile)
-    captured = capsys.readouterr()
-    assert f' could not use cookiefile {cookiefile} (Extra data)' in captured.err
+    assert f' could not use cookiefile {cookiefile} (Extra data)' in caplog.text
+
+    LOG.setLevel(level=logging.NOTSET)
 
     if os.path.isfile(cookiefile):
         os.remove(cookiefile)
@@ -691,8 +669,8 @@ def test_write(retriever, firmware, vectorLengthZero):
                           ['tests/configs/bad/missingPassword.yml'],
                           ['tests/configs/good/standard.yml'],
                           ['tests/configs/good/defaults.yml'],
-                          ['-v', 'tests/configs/good/standard.yml']])
-def test_main(request, parameters, capsys):  # noqa: C901
+                          ['-vv', 'tests/configs/good/standard.yml']])
+def test_main(request, parameters, caplog, capsys):  # noqa: C901
     sys.argv = ["prosafe_exporter"]
     for parameter in parameters:
         sys.argv.append(parameter)
@@ -747,54 +725,40 @@ def test_main(request, parameters, capsys):  # noqa: C901
     elif exitEmptyConfig:
         assert pytest_wrapped_exit.type == SystemExit
         assert pytest_wrapped_exit.value.code == 3
-        assert re.match(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                        r'Config empty or cannot be parsed', captured.err)
+        assert re.match(r'.+Config empty or cannot be parsed', caplog.text)
 
     elif exitSwitchesMissing:
         assert pytest_wrapped_exit.type == SystemExit
         assert pytest_wrapped_exit.value.code == 4
-        assert re.match(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                        r'You have to define switches in the switches: section of your configuration', captured.err)
+        assert re.match(r'.+You have to define switches in the switches: section of your configuration', caplog.text)
 
     elif exitSwitchesHostnameMissing:
         assert pytest_wrapped_exit.type == SystemExit
         assert pytest_wrapped_exit.value.code == 0
-        assert re.match(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                        r'You have to define the hostname for the switch, ignoring this switch entry', captured.err)
+        assert re.match(r'.+You have to define the hostname for the switch, ignoring this switch entry', caplog.text)
 
     elif exitSwitchesPasswordMissing:
         assert pytest_wrapped_exit.type == SystemExit
         assert pytest_wrapped_exit.value.code == 0
-        assert re.match(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                        r'You have to define the password for the switch, ignoring this switch entry', captured.err)
+        assert re.match(r'.+You have to define the password for the switch, ignoring this switch entry', caplog.text)
 
     else:
         assert pytest_wrapped_exit.type == SystemExit
         assert pytest_wrapped_exit.value.code == 0
         if '-v' in parameters:
-            assert re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Created retriever for host (.*)( but could not use cookiefile (.*) '
+            assert re.match(r'(.+Created retriever for host (.*)( but could not use cookiefile (.*) '
                             r'\(Expecting value\))?\n)+'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Created retriever for host 192\.168\.0\.200\n'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'ProSafeExporter is listening on 0\.0\.0\.0:9493 for request on /metrics endpoint \(but'
+                            r'.+Created retriever for host 192\.168\.0\.200\n'
+                            r'.+ProSafeExporter is listening on 0\.0\.0\.0:9493 for request on /metrics endpoint \(but'
                             r' you can also use any other path\)\n'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Retrieving data from all devies\n'
-                            r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Start retrieval for (.*)\n'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                            r'Connection Error with host (.*)\n)+'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Retrieving done\n'
-                            r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'ProSafeExporter was stopped\n'
-                            r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - INFO - '
-                            r'Writing cookiefile (.*)\n)*', captured.err)
+                            r'.+Retrieving data from all devies\n'
+                            r'(.+Start retrieval for (.*)\n'
+                            r'.+Connection Error with host (.*)\n)+'
+                            r'.+Retrieving done\n'
+                            r'.+ProSafeExporter was stopped\n'
+                            r'(.+Writing cookiefile (.*)\n)*', caplog.text)
         else:
-            assert re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{1,3} - ProSafe_Exporter - ERROR - '
-                            r'Connection Error with host (.*)\n)+', captured.err)
+            assert re.match(r'(.+Connection Error with host (.*)\n)+', caplog.text)
 
     if config:
         for switch in config['switches']:

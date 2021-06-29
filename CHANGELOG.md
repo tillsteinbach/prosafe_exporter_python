@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased] (Available through Edge Tag)
+- No unreleased changes
+
+## [0.4.3] - 2021-06-29
+### Fixed
+- Prevent sending outdated data when retrieval process is stuck
+
 ## [0.4.2] - 2021-05-07
 ### Changed
 - Fixed issues colected in static analysis
@@ -32,7 +38,8 @@ All notable changes to this project will be documented in this file.
 ## [0.1.0] - 2021-04-22
 Initial release to enable "latest" tag on dockerhub
 
-[unreleased]: https://github.com/tillsteinbach/prosafe_exporter_python/compare/v0.4.2...HEAD
+[unreleased]: https://github.com/tillsteinbach/prosafe_exporter_python/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.3
 [0.4.2]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.2
 [0.4.1]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.1
 [0.4.0]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.0
