@@ -39,11 +39,10 @@ class ProSafeExporter:
                               self.__probe, methods=['POST', 'GET'])
         self.app.add_url_rule('/', '/', self.__probe, methods=['POST', 'GET'])
 
-    def run(self, host="0.0.0.0", port=9493, debug=False, endless=True):  # nosec
-        if not debug:  # pragma: no cover
-            os.environ['WERKZEUG_RUN_MAIN'] = 'true'
-            log = logging.getLogger('werkzeug')
-            log.disabled = True
+    def run(self, host="0.0.0.0", port=9493, loglevel=logging.INFO, endless=True):  # nosec
+        os.environ['WERKZEUG_RUN_MAIN'] = 'true'
+        log = logging.getLogger('werkzeug')
+        log.setLevel(loglevel)
 
         server = make_server(host, port, self.app)
 
@@ -510,7 +509,7 @@ def main(endless=True, always_early_timeout=False):  # noqa: C901
                 requestTimeout=config['global']['retrieve_timeout'],
                 cookiefile=switch['cookiefile']))
     exporter = ProSafeExporter(retrievers=retrievers, retrieveInterval=config['global']['retrieve_interval'])
-    exporter.run(host=config['global']['host'], port=config['global']['port'], debug=args.verbose, endless=endless)
+    exporter.run(host=config['global']['host'], port=config['global']['port'], loglevel=LOG_LEVELS[logLevel], endless=endless)
     # Cleanup
     del exporter
     retrievers.clear()
