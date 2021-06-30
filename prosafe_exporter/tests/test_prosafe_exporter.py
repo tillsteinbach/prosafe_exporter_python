@@ -761,7 +761,7 @@ def test_main(request, parameters, caplog, capsys):  # noqa: C901
             assert re.match(r'(.+Connection Error with host (.*)\n)+', caplog.text)
 
     if config:
-        for switch in config['switches']:
+        for switch in config['switches']:  # pylint: disable=unsubscriptable-object
             if 'cookiefile' in switch:
                 if os.path.isfile(f'{request.config.rootdir}/{switch["cookiefile"]}'):
                     os.remove(f'{request.config.rootdir}/{switch["cookiefile"]}')

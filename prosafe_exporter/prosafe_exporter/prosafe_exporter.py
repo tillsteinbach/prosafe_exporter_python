@@ -509,7 +509,8 @@ def main(endless=True, always_early_timeout=False):  # noqa: C901
                 requestTimeout=config['global']['retrieve_timeout'],
                 cookiefile=switch['cookiefile']))
     exporter = ProSafeExporter(retrievers=retrievers, retrieveInterval=config['global']['retrieve_interval'])
-    exporter.run(host=config['global']['host'], port=config['global']['port'], loglevel=LOG_LEVELS[logLevel], endless=endless)
+    exporter.run(host=config['global']['host'], port=config['global']['port'],
+                 loglevel=LOG_LEVELS[logLevel], endless=endless)
     # Cleanup
     del exporter
     retrievers.clear()
