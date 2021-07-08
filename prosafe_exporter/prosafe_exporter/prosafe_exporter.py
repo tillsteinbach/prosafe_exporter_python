@@ -189,46 +189,76 @@ class ProSafeRetrieve:
         self.loggedIn = True
 
     def __retrieveInfos(self):  # noqa: C901
-        infoRequest = self.__session.get(f'http://{self.hostname}/switch_info.htm', timeout=self.requestTimeout)
-        infoRequest.raise_for_status()
+        retries = self.retries
+        while retries > 0:
+            noProblem = True
+            infoRequest = self.__session.get(f'http://{self.hostname}/switch_info.htm', timeout=self.requestTimeout)
+            infoRequest.raise_for_status()
 
-        if 'RedirectToLoginPage' in infoRequest.text:
-            self.error = 'Login failed for ' + self.hostname
-            LOG.error(self.error)
-            raise ConnectionRefusedError(self.error)
-        tree = html.fromstring(infoRequest.content)
-        allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
-        allinfos = [allinfos[x: x + 2] for x in range(0, len(allinfos), 2)]
-        self.__infos = dict()
-        for info in allinfos:
-            attribute = info[0].text
+            if 'RedirectToLoginPage' in infoRequest.text:
+                self.error = 'Login failed for ' + self.hostname
+                LOG.error(self.error)
+                raise ConnectionRefusedError(self.error)
+            tree = html.fromstring(infoRequest.content)
+            allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
+            allinfos = [allinfos[x: x + 2] for x in range(0, len(allinfos), 2)]
+            self.__infos = dict()
+            for info in allinfos:
+                attribute = info[0].text
 
-            if attribute in {'Produktname', 'Product Name'}:
-                self.__infos['product_name'] = info[1].text
-            elif attribute in {'Switch-Name', 'Switch Name'}:
-                self.__infos['switch_name'] = info[1].xpath(
-                    './/input[@type="text"]/@value')[0]
-            elif attribute in {'Seriennummer', 'Serial Number'}:
-                self.__infos['serial_number'] = info[1].text
-            elif attribute in {'MAC-Adresse', 'MAC Address'}:
-                self.__infos['mac_adresse'] = info[1].text
-            elif attribute in {'Bootloader-Version'}:
-                self.__infos['bootloader_version'] = info[1].text
-            elif attribute in {'Firmwareversion', 'Firmware Version'}:
-                self.__infos['firmware_version'] = info[1].text
-            elif attribute in {'DHCP-Modus', 'DHCP Mode'}:
-                self.__infos['dhcp_mode'] = info[1].xpath(
-                    './/input[@name="dhcp_mode"]/@value')[0]
-            elif attribute in {'IP-Adresse', 'IP Address'}:
-                self.__infos['ip_adresse'] = info[1].xpath(
-                    './/input[@type="text"]/@value')[0]
-            elif attribute in {'Subnetzmaske', 'Subnet Mask'}:
-                self.__infos['subnetmask'] = info[1].xpath(
-                    './/input[@type="text"]/@value')[0]
-            elif attribute in {'Gateway-Adresse', 'Gateway Address'}:
-                self.__infos['gateway_adresse'] = info[1].xpath(
-                    './/input[@type="text"]/@value')[0]
-        return True
+                if attribute in {'Produktname', 'Product Name'}:
+                    self.__infos['product_name'] = info[1].text
+                elif attribute in {'Switch-Name', 'Switch Name'}:
+                    value = info[1].xpath('.//input[@type="text"]/@value')
+                    if len(value) == 1:
+                        self.__infos['switch_name'] = value[0]
+                    else:
+                        noProblem = False
+                        break
+                elif attribute in {'Seriennummer', 'Serial Number'}:
+                    self.__infos['serial_number'] = info[1].text
+                elif attribute in {'MAC-Adresse', 'MAC Address'}:
+                    self.__infos['mac_adresse'] = info[1].text
+                elif attribute in {'Bootloader-Version'}:
+                    self.__infos['bootloader_version'] = info[1].text
+                elif attribute in {'Firmwareversion', 'Firmware Version'}:
+                    self.__infos['firmware_version'] = info[1].text
+                elif attribute in {'DHCP-Modus', 'DHCP Mode'}:
+                    value = info[1].xpath('.//input[@name="dhcp_mode"]/@value')
+                    if len(value) == 1:
+                        self.__infos['dhcp_mode'] = value[0]
+                    else:
+                        noProblem = False
+                        break
+                elif attribute in {'IP-Adresse', 'IP Address'}:
+                    value = info[1].xpath('.//input[@type="text"]/@value')
+                    if len(value) == 1:
+                        self.__infos['ip_adresse'] = value[0]
+                    else:
+                        noProblem = False
+                        break
+                elif attribute in {'Subnetzmaske', 'Subnet Mask'}:
+                    value = info[1].xpath('.//input[@type="text"]/@value')
+                    if len(value) == 1:
+                        self.__infos['subnetmask'] = value[0]
+                    else:
+                        noProblem = False
+                        break
+                elif attribute in {'Gateway-Adresse', 'Gateway Address'}:
+                    value = info[1].xpath('.//input[@type="text"]/@value')
+                    if len(value) == 1:
+                        self.__infos['gateway_adresse'] = value[0]
+                    else:
+                        noProblem = False
+                        break
+            if noProblem:
+                return True
+            retries -= 1
+        self.__infos = None
+        self.error = f'Could not retrieve correct switch_info for {self.hostname} after {self.retries}' \
+                     ' retries. This can happen when there is much traffic on the device'
+        LOG.error(self.error)
+        return False
 
     def __retrieveStatus(self):
         retries = self.retries
@@ -355,7 +385,9 @@ class ProSafeRetrieve:
 
             try:
                 self.__login()
-                self.__retrieveInfos()
+                hasInfos = self.__retrieveInfos()
+                if not hasInfos:
+                    return
                 hasStatus = self.__retrieveStatus()
                 if not hasStatus:
                     return

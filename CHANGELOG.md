@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased] (Available through Edge Tag)
-- No unreleased changes
+- fix retry on corrupted answer when retrieving switch_info
 
 ## [0.4.4] - 2021-06-30
 ### Fixed

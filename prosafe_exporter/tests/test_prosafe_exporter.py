@@ -280,6 +280,55 @@ def test_loginError(request, retriever, firmware, password, httpserver):
 
 
 @pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
+@pytest.mark.parametrize('fails', [(1), (2), (3)])
+@pytest.mark.parametrize('reason', [('dhcpValueMissing'), ('switchNameMissing'), ('ipMissing'), ('maskMissing'),
+                         ('gatewayMissing')])
+def test_partOfSwitchInfoMissing(request, retriever, firmware, password, httpserver, fails, reason):
+    retriever.retries = 3
+    cookie = generateCookie()
+    loginGood(request, firmware, password, httpserver, cookie)
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r') as f:
+        httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                          headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+
+    if fails >= 2:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r') as f:
+            httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+
+    if fails >= 3:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r') as f:
+            httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+
+        retriever.retrieve()
+        assert retriever._ProSafeRetrieve__infos is None
+        assert retriever._ProSafeRetrieve__status is None
+        assert retriever._ProSafeRetrieve__statistics is None
+    else:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+            httpserver.expect_ordered_request("/switch_info.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+            httpserver.expect_ordered_request("/status.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+            httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
+                                              headers=genWithHeader(cookie)).respond_with_data(f.readlines())
+
+        retriever.retrieve()
+        checkInfos(retriever._ProSafeRetrieve__infos, firmware)
+        checkStatus(retriever._ProSafeRetrieve__status, firmware)
+        checkStatistics(retriever._ProSafeRetrieve__statistics, firmware)
+
+    httpserver.check_assertions()
+
+    retriever.writeResult()
+
+
+@pytest.mark.parametrize('firmware, password', [('V2.06.03EN', 'password')])
 @pytest.mark.parametrize('fails', [(1), (2)])
 def test_partOfStatusMissing(request, retriever, firmware, password, httpserver, fails):
     cookie = generateCookie()
