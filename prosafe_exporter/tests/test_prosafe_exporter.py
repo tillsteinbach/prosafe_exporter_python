@@ -8,7 +8,7 @@ import yaml
 
 import pytest
 
-from prosafe_exporter.prosafe_exporter import ProSafeRetrieve, main
+from prosafe_exporter.prosafe_exporter_base import ProSafeRetrieve, main
 
 
 # seed random to generate same sequence every time the test runs to make it deterministic
@@ -236,7 +236,7 @@ def test_cookiefile(request, firmware, password, httpserver, caplog):
     retrieverNew2.__del__()
     del retrieverNew2
 
-    with open(cookiefile, 'w') as f:
+    with open(cookiefile, 'w', encoding='utf-8') as f:
         f.write('{}{}')
 
     _ = ProSafeRetrieve(hostname='localhost:8888',
@@ -392,7 +392,7 @@ def test_oneTXMissing(request, retriever, firmware, password, httpserver):
                                               headers=genWithHeader(cookie)).respond_with_data(badResponse)
     else:
         with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/port_statistics.htm_oneTXMissing',
-                  'r') as f:
+                  'r', encoding='utf-8') as f:
             badResponse = f.readlines()
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(badResponse)
@@ -432,7 +432,7 @@ def test_firstPortMissing(request, retriever, firmware, password, httpserver):
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/port_statistics.htm_firstPortMissing',
-                  'r') as f:
+                  'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     retriever.retrieve()
@@ -464,7 +464,7 @@ def test_lastPortMissing(request, retriever, firmware, password, httpserver):
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/port_statistics.htm_lastPortMissing',
-                  'r') as f:
+                  'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     retriever.retrieve()
@@ -599,7 +599,7 @@ def test_redirect(request, retriever, firmware, password, redirect, httpserver):
 @pytest.mark.parametrize('firmware', [('V2.06.14GR'), ('V2.06.03EN')])
 @pytest.mark.parametrize('vectorLengthZero', [True, False])
 def test_write(retriever, firmware, vectorLengthZero):
-    retriever._ProSafeRetrieve__infos = dict()
+    retriever._ProSafeRetrieve__infos = {}
     retriever._ProSafeRetrieve__infos['product_name'] = 'GS108Ev3'
     retriever._ProSafeRetrieve__infos['switch_name'] = 'MyFancySwitch'
     retriever._ProSafeRetrieve__infos['serial_number'] = '123456789'
@@ -737,7 +737,7 @@ def test_main(request, parameters, caplog, capsys):  # noqa: C901
             if os.path.getsize(parameter) == 0:
                 exitEmptyConfig = True
 
-            with open(parameter) as f:
+            with open(parameter, encoding='utf-8') as f:
                 configContent = f.read()
                 if 'switches:' in configContent:
                     exitSwitchesMissing = False

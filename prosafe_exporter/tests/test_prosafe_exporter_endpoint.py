@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import logging
 import pytest
 
-from prosafe_exporter.prosafe_exporter import ProSafeExporter, ProSafeRetrieve
+from prosafe_exporter.prosafe_exporter_base import ProSafeExporter, ProSafeRetrieve
 
 logging.basicConfig(level=logging.INFO)
 
