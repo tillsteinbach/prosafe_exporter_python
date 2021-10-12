@@ -73,11 +73,11 @@ def test_withRetrieveException(request, client, retriever, httpserver, firmware)
     exporter = client[0]
 
     exporter.retrievers = [retriever]
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.cgi", method='POST').respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET').respond_with_data(f.readlines())
 
     exporter._ProSafeExporter__retrieve()

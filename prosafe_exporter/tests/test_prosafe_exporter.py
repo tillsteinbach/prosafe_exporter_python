@@ -92,9 +92,9 @@ def generateCookie():
 
 
 def loginGood(request, firmware, password, httpserver, cookie):
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.cgi", method='POST', data=f'password={password}').respond_with_data(
             f.readlines(), headers=genSetHeader(cookie))
 
@@ -112,20 +112,20 @@ def test_serverUnreachable(retriever):
 def test_standardRequestGood(request, retriever, firmware, password, httpserver):
     cookie = generateCookie()
     loginGood(request, firmware, password, httpserver, cookie)
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/status.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
         httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data('', status=500)
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     retriever.retrieve()
@@ -151,9 +151,9 @@ def test_cookiefile(request, firmware, password, httpserver, caplog):
                                 cookiefile=cookiefile)
 
     cookie = generateCookie()
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.cgi", method='POST', data=f'password={password}').respond_with_data(
             f.readlines(), headers=genSetHeader(cookie))
     retriever._ProSafeRetrieve__login()  # pylint: disable=no-member
@@ -173,23 +173,23 @@ def test_cookiefile(request, firmware, password, httpserver, caplog):
                                    retries=2,
                                    cookiefile=cookiefile)
 
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/index.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/status.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
         httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data('', status=500)
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
@@ -205,28 +205,28 @@ def test_cookiefile(request, firmware, password, httpserver, caplog):
                                     password='password',
                                     retries=2,
                                     cookiefile=cookiefile)
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/index.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.cgi", method='POST', data=f'password={password}').respond_with_data(
             f.readlines(), headers=genSetHeader(cookieNew))
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                           headers=genWithHeader(cookieNew)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/status.htm", method='GET',
                                           headers=genWithHeader(cookieNew)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
         httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                           headers=genWithHeader(cookieNew)).respond_with_data('', status=500)
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookieNew)).respond_with_data(f.readlines())
     else:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookieNew)).respond_with_data(f.readlines())
 
@@ -255,9 +255,9 @@ def test_cookiefile(request, firmware, password, httpserver, caplog):
                                                 ('V2.06.14EN', '5fd34891e0221be7a1dcbd78ae81a700'),
                                                 ('V2.06.03EN', 'password')])
 def test_loginError(request, retriever, firmware, password, httpserver):
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/login.cgi_error', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/login.cgi_error', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.cgi", method='POST', data=f'password={password}').respond_with_data(
             f.readlines())
 
@@ -287,17 +287,17 @@ def test_partOfSwitchInfoMissing(request, retriever, firmware, password, httpser
     retriever.retries = 3
     cookie = generateCookie()
     loginGood(request, firmware, password, httpserver, cookie)
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
     if fails >= 2:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
     if fails >= 3:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/switch_info.htm_' + reason, 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
@@ -306,15 +306,15 @@ def test_partOfSwitchInfoMissing(request, retriever, firmware, password, httpser
         assert retriever._ProSafeRetrieve__status is None
         assert retriever._ProSafeRetrieve__statistics is None
     else:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
@@ -333,31 +333,31 @@ def test_partOfSwitchInfoMissing(request, retriever, firmware, password, httpser
 def test_partOfStatusMissing(request, retriever, firmware, password, httpserver, fails):
     cookie = generateCookie()
     loginGood(request, firmware, password, httpserver, cookie)
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/status.htm_partMissing', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/status.htm_partMissing', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/status.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if fails == 2:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/status.htm_partMissing', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/status.htm_partMissing', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         retriever.retrieve()
         assert retriever._ProSafeRetrieve__status is None
         assert retriever._ProSafeRetrieve__statistics is None
     else:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         if firmware in ['V2.06.14EN']:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data('', status=500)
-            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r') as f:
+            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r', encoding='utf-8') as f:
                 httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                                   headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         else:
-            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r', encoding='utf-8') as f:
                 httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                                   headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         retriever.retrieve()
@@ -375,16 +375,16 @@ def test_partOfStatusMissing(request, retriever, firmware, password, httpserver,
 def test_oneTXMissing(request, retriever, firmware, password, httpserver):
     cookie = generateCookie()
     loginGood(request, firmware, password, httpserver, cookie)
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/status.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
         httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data('', status=500)
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/portStats.htm_oneTXMissing', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/portStats.htm_oneTXMissing', 'r', encoding='utf-8') as f:
             badResponse = f.readlines()
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(badResponse)
@@ -418,16 +418,16 @@ def test_oneTXMissing(request, retriever, firmware, password, httpserver):
 def test_firstPortMissing(request, retriever, firmware, password, httpserver):
     cookie = generateCookie()
     loginGood(request, firmware, password, httpserver, cookie)
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/status.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
         httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data('', status=500)
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/portStats.htm_firstPortMissing', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/portStats.htm_firstPortMissing', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
@@ -450,16 +450,16 @@ def test_firstPortMissing(request, retriever, firmware, password, httpserver):
 def test_lastPortMissing(request, retriever, firmware, password, httpserver):
     cookie = generateCookie()
     loginGood(request, firmware, password, httpserver, cookie)
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/status.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if firmware in ['V2.06.14EN']:
         httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                           headers=genWithHeader(cookie)).respond_with_data('', status=500)
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/portStats.htm_lastPortMissing', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/bad/portStats.htm_lastPortMissing', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
@@ -484,49 +484,49 @@ def test_retry(request, retriever, firmware, retry, password, httpserver):
     cookie = generateCookie()
     if retry == 'login_get':
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data('', status=500)
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
     else:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
 
     if retry == 'login_post':
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/login.cgi", method='POST',
                                               data=f'password={password}').respond_with_data('', status=500)
     elif retry not in ['login_get']:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/login.cgi",
                                               method='POST',
                                               data=f'password={password}').respond_with_data(
                                                   f.readlines(), headers=genSetHeader(cookie))
 
     if retry == 'switch_info':
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data('', status=500)
     elif retry not in ['login_get', 'login_post']:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
     if retry == 'status':
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data('', status=500)
     elif retry not in ['login_get', 'login_post', 'switch_info']:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
     if retry == 'statistics':
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data('', status=500)
             httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data('', status=500)
     elif retry not in ['login_get', 'login_post', 'switch_info', 'status']:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 
@@ -544,47 +544,47 @@ def test_retry(request, retriever, firmware, retry, password, httpserver):
 @pytest.mark.parametrize('redirect', ['switch_info', 'status', 'statistics'])
 def test_redirect(request, retriever, firmware, password, redirect, httpserver):
     cookie = generateCookie()
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.htm", method='GET').respond_with_data(f.readlines())
-    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r') as f:
+    with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/login.htm', 'r', encoding='utf-8') as f:
         httpserver.expect_ordered_request("/login.cgi", method='POST', data=f'password={password}').respond_with_data(
             f.readlines(), headers=genSetHeader(cookie))
     if redirect in ['switch_info']:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/switch_info.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/switch_info.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if redirect in ['status']:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
-        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r') as f:
+        with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/status.htm', 'r', encoding='utf-8') as f:
             httpserver.expect_ordered_request("/status.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     if redirect in ['statistics']:
         if firmware in ['V2.06.14EN']:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data('', status=500)
-            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r') as f:
+            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r', encoding='utf-8') as f:
                 httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                                   headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         else:
-            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r') as f:
+            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/index.htm_redirect', 'r', encoding='utf-8') as f:
                 httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                                   headers=genWithHeader(cookie)).respond_with_data(f.readlines())
     else:
         if firmware in ['V2.06.14EN']:
             httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                               headers=genWithHeader(cookie)).respond_with_data('', status=500)
-            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r') as f:
+            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/portStats.htm', 'r', encoding='utf-8') as f:
                 httpserver.expect_ordered_request("/portStats.htm", method='GET',
                                                   headers=genWithHeader(cookie)).respond_with_data(f.readlines())
         else:
-            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r') as f:
+            with open(f'{request.config.rootdir}/tests/responses/{firmware}/good/port_statistics.htm', 'r', encoding='utf-8') as f:
                 httpserver.expect_ordered_request("/port_statistics.htm", method='GET',
                                                   headers=genWithHeader(cookie)).respond_with_data(f.readlines())
 

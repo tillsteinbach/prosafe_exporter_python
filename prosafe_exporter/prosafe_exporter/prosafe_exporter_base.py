@@ -111,7 +111,7 @@ class ProSafeRetrieve:
         if cookiefile:
             try:
                 try:
-                    with open(cookiefile, 'r') as file:
+                    with open(cookiefile, 'r', encoding='utf-8') as file:
                         cookies = requests.utils.cookiejar_from_dict(json.load(file))
                     self.__session.cookies.update(cookies)
                     self.loggedIn = True
@@ -132,7 +132,7 @@ class ProSafeRetrieve:
     def __del__(self):
         if self.cookieFile:
             try:
-                with open(self.cookieFile, 'w') as file:
+                with open(self.cookieFile, 'w', encoding='utf-8') as file:
                     json.dump(requests.utils.dict_from_cookiejar(self.__session.cookies), file)
                 LOG.info('Writing cookiefile %s', self.cookieFile)
                 self.__cookiefd = None
@@ -202,7 +202,7 @@ class ProSafeRetrieve:
             tree = html.fromstring(infoRequest.content)
             allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
             allinfos = [allinfos[x: x + 2] for x in range(0, len(allinfos), 2)]
-            self.__infos = dict()
+            self.__infos = {}
             for info in allinfos:
                 if len(info) < 2:
                     noProblem = False
@@ -286,7 +286,7 @@ class ProSafeRetrieve:
                     # Check that number matches location in list
                     portCheck = portStatus[0].isnumeric() and int(portStatus[0]) == num
                     stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
-                    speedCheck = portStatus[2] in speedmap.keys()
+                    speedCheck = portStatus[2] in speedmap
                     # Conscider MTU always below 10k
                     mtuCheck = portStatus[3].isnumeric() and int(portStatus[3]) < 10000
                     noProblem = noProblem and portCheck and stateCheck and speedCheck and mtuCheck
@@ -306,7 +306,7 @@ class ProSafeRetrieve:
                     portCheck = portStatus[0].isnumeric() and int(
                         portStatus[0]) == num
                     stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
-                    speedCheck = portStatus[2] in speedmap.keys()
+                    speedCheck = portStatus[2] in speedmap
 
                     noProblem = noProblem and portCheck and stateCheck and speedCheck
                 else:
@@ -488,8 +488,7 @@ def main(endless=True, always_early_timeout=False):  # noqa: C901
     parser.add_argument('config', type=argparse.FileType(
         'r'), help='configuration')
     parser.add_argument('-v', '--verbose', action="append_const", const=-1,)
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s {version}'.format(version=__version__))
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     args = parser.parse_args()
 
     logLevel = LOG_LEVELS.index(DEFAULT_LOG_LEVEL)
@@ -504,7 +503,7 @@ def main(endless=True, always_early_timeout=False):  # noqa: C901
         sys.exit(3)
 
     if 'global' not in config:
-        config['global'] = dict()
+        config['global'] = {}
     if 'host' not in config['global']:
         config['global']['host'] = '0.0.0.0'  # nosec
     if 'port' not in config['global']:
@@ -524,7 +523,7 @@ def main(endless=True, always_early_timeout=False):  # noqa: C901
     if always_early_timeout:  # pragma: no cover
         config['global']['retrieve_timeout'] = 0.001
 
-    retrievers = list()
+    retrievers = []
     for switch in config['switches']:
         if 'hostname' not in switch:
             LOG.error(

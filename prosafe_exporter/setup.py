@@ -23,7 +23,7 @@ setup(
     install_requires=INSTALL_REQUIRED,
     entry_points={
         'console_scripts': [
-            'prosafe_exporter = prosafe_exporter.prosafe_exporter:main',
+            'prosafe_exporter = prosafe_exporter.prosafe_exporter_base:main',
         ],
     },
     classifiers=[
