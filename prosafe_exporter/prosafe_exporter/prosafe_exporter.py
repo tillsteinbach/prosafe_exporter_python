@@ -204,6 +204,9 @@ class ProSafeRetrieve:
             allinfos = [allinfos[x: x + 2] for x in range(0, len(allinfos), 2)]
             self.__infos = dict()
             for info in allinfos:
+                if len(info) < 2:
+                    noProblem = False
+                    break
                 attribute = info[0].text
 
                 if attribute in {'Produktname', 'Product Name'}:
