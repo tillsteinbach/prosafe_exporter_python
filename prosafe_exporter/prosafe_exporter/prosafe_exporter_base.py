@@ -328,7 +328,7 @@ class ProSafeRetrieve:
             return False
         return True
 
-    def __retrieveStatistics(self):
+    def __retrieveStatistics(self):  # noqa: C901
         retries = self.retries
         while retries > 0:
             try:
@@ -348,19 +348,28 @@ class ProSafeRetrieve:
                 self.__status = None
                 raise ConnectionRefusedError(self.error)
 
+            noProblem = True
+
             tree = html.fromstring(statisticsRequest.content)
             allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
-            allports = [str(int(x, 16)) for x in allports]
+            try:
+                allports = [str(int(x, 16)) for x in allports]
+            except ValueError:
+                allports = []
+                noProblem = False
 
             # Some older firmware does not use the input fields
-            if not allports:
+            if not allports and noProblem:
                 allports = tree.xpath('//tr[@class="portID"]/td[@class="def" and @sel="text"]/text()')
                 # In this case the value is not in hex, still casting to be sure we have a number
-                allports = [str(int(x)) for x in allports]
+                try:
+                    allports = [str(int(x)) for x in allports]
+                except ValueError:
+                    allports = []
+                    noProblem = False
 
             self.__statistics = [allports[x: x + 3] for x in range(0, len(allports), 3)]
 
-            noProblem = True
             for _, portStatistics in enumerate(self.__statistics, start=1):
                 if len(portStatistics) != 3:
                     noProblem = False
