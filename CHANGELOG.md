@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] (Available through Edge Tag)
 - no unreleased changes so far
+- 
+## [0.4.6] - 2021-11-11
+### Fixed
+- fix socket timeout error
 
 ## [0.4.5] - 2021-10-12
 ### Fixed
@@ -47,7 +51,8 @@ All notable changes to this project will be documented in this file.
 ## [0.1.0] - 2021-04-22
 Initial release to enable "latest" tag on dockerhub
 
-[unreleased]: https://github.com/tillsteinbach/prosafe_exporter_python/compare/v0.4.5...HEAD
+[unreleased]: https://github.com/tillsteinbach/prosafe_exporter_python/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.6
 [0.4.5]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.5
 [0.4.4]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.4
 [0.4.3]: https://github.com/tillsteinbach/prosafe_exporter_python/releases/tag/v0.4.3
