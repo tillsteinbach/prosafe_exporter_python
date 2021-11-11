@@ -2,6 +2,7 @@
 
 import sys
 import time
+import socket
 import hashlib
 import json
 import os
@@ -188,74 +189,78 @@ class ProSafeRetrieve:
             raise ConnectionRefusedError(self.error)
         self.loggedIn = True
 
-    def __retrieveInfos(self):  # noqa: C901
+    def __retrieveInfos(self):  # noqa: C901  pylint: disable=too-many-branches
         retries = self.retries
         while retries > 0:
             noProblem = True
-            infoRequest = self.__session.get(f'http://{self.hostname}/switch_info.htm', timeout=self.requestTimeout)
-            infoRequest.raise_for_status()
+            try:
+                infoRequest = self.__session.get(f'http://{self.hostname}/switch_info.htm', timeout=self.requestTimeout)
+                infoRequest.raise_for_status()
+            except socket.timeout:
+                noProblem = False
 
-            if 'RedirectToLoginPage' in infoRequest.text:
-                self.error = 'Login failed for ' + self.hostname
-                LOG.error(self.error)
-                raise ConnectionRefusedError(self.error)
-            tree = html.fromstring(infoRequest.content)
-            allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
-            allinfos = [allinfos[x: x + 2] for x in range(0, len(allinfos), 2)]
-            self.__infos = {}
-            for info in allinfos:
-                if len(info) < 2:
-                    noProblem = False
-                    break
-                attribute = info[0].text
-
-                if attribute in {'Produktname', 'Product Name'}:
-                    self.__infos['product_name'] = info[1].text
-                elif attribute in {'Switch-Name', 'Switch Name'}:
-                    value = info[1].xpath('.//input[@type="text"]/@value')
-                    if len(value) == 1:
-                        self.__infos['switch_name'] = value[0]
-                    else:
-                        noProblem = False
-                        break
-                elif attribute in {'Seriennummer', 'Serial Number'}:
-                    self.__infos['serial_number'] = info[1].text
-                elif attribute in {'MAC-Adresse', 'MAC Address'}:
-                    self.__infos['mac_adresse'] = info[1].text
-                elif attribute in {'Bootloader-Version'}:
-                    self.__infos['bootloader_version'] = info[1].text
-                elif attribute in {'Firmwareversion', 'Firmware Version'}:
-                    self.__infos['firmware_version'] = info[1].text
-                elif attribute in {'DHCP-Modus', 'DHCP Mode'}:
-                    value = info[1].xpath('.//input[@name="dhcp_mode"]/@value')
-                    if len(value) == 1:
-                        self.__infos['dhcp_mode'] = value[0]
-                    else:
-                        noProblem = False
-                        break
-                elif attribute in {'IP-Adresse', 'IP Address'}:
-                    value = info[1].xpath('.//input[@type="text"]/@value')
-                    if len(value) == 1:
-                        self.__infos['ip_adresse'] = value[0]
-                    else:
-                        noProblem = False
-                        break
-                elif attribute in {'Subnetzmaske', 'Subnet Mask'}:
-                    value = info[1].xpath('.//input[@type="text"]/@value')
-                    if len(value) == 1:
-                        self.__infos['subnetmask'] = value[0]
-                    else:
-                        noProblem = False
-                        break
-                elif attribute in {'Gateway-Adresse', 'Gateway Address'}:
-                    value = info[1].xpath('.//input[@type="text"]/@value')
-                    if len(value) == 1:
-                        self.__infos['gateway_adresse'] = value[0]
-                    else:
-                        noProblem = False
-                        break
             if noProblem:
-                return True
+                if 'RedirectToLoginPage' in infoRequest.text:
+                    self.error = 'Login failed for ' + self.hostname
+                    LOG.error(self.error)
+                    raise ConnectionRefusedError(self.error)
+                tree = html.fromstring(infoRequest.content)
+                allinfos = tree.xpath('//table[@class="tableStyle"]//td[@nowrap=""]')
+                allinfos = [allinfos[x: x + 2] for x in range(0, len(allinfos), 2)]
+                self.__infos = {}
+                for info in allinfos:
+                    if len(info) < 2:
+                        noProblem = False
+                        break
+                    attribute = info[0].text
+
+                    if attribute in {'Produktname', 'Product Name'}:
+                        self.__infos['product_name'] = info[1].text
+                    elif attribute in {'Switch-Name', 'Switch Name'}:
+                        value = info[1].xpath('.//input[@type="text"]/@value')
+                        if len(value) == 1:
+                            self.__infos['switch_name'] = value[0]
+                        else:
+                            noProblem = False
+                            break
+                    elif attribute in {'Seriennummer', 'Serial Number'}:
+                        self.__infos['serial_number'] = info[1].text
+                    elif attribute in {'MAC-Adresse', 'MAC Address'}:
+                        self.__infos['mac_adresse'] = info[1].text
+                    elif attribute in {'Bootloader-Version'}:
+                        self.__infos['bootloader_version'] = info[1].text
+                    elif attribute in {'Firmwareversion', 'Firmware Version'}:
+                        self.__infos['firmware_version'] = info[1].text
+                    elif attribute in {'DHCP-Modus', 'DHCP Mode'}:
+                        value = info[1].xpath('.//input[@name="dhcp_mode"]/@value')
+                        if len(value) == 1:
+                            self.__infos['dhcp_mode'] = value[0]
+                        else:
+                            noProblem = False
+                            break
+                    elif attribute in {'IP-Adresse', 'IP Address'}:
+                        value = info[1].xpath('.//input[@type="text"]/@value')
+                        if len(value) == 1:
+                            self.__infos['ip_adresse'] = value[0]
+                        else:
+                            noProblem = False
+                            break
+                    elif attribute in {'Subnetzmaske', 'Subnet Mask'}:
+                        value = info[1].xpath('.//input[@type="text"]/@value')
+                        if len(value) == 1:
+                            self.__infos['subnetmask'] = value[0]
+                        else:
+                            noProblem = False
+                            break
+                    elif attribute in {'Gateway-Adresse', 'Gateway Address'}:
+                        value = info[1].xpath('.//input[@type="text"]/@value')
+                        if len(value) == 1:
+                            self.__infos['gateway_adresse'] = value[0]
+                        else:
+                            noProblem = False
+                            break
+                if noProblem:
+                    return True
             retries -= 1
         self.__infos = None
         self.error = f'Could not retrieve correct switch_info for {self.hostname} after {self.retries}' \
@@ -263,59 +268,63 @@ class ProSafeRetrieve:
         LOG.error(self.error)
         return False
 
-    def __retrieveStatus(self):
+    def __retrieveStatus(self):  # noqa: C901
         retries = self.retries
         while retries > 0:
-            statusRequest = self.__session.get(f'http://{self.hostname}/status.htm', timeout=self.requestTimeout)
-            statusRequest.raise_for_status()
-
-            if 'RedirectToLoginPage' in statusRequest.text:
-                self.error = 'Login failed for ' + self.hostname
-                LOG.error(self.error)
-                self.__infos = None
-                raise ConnectionRefusedError(self.error)
-
-            tree = html.fromstring(statusRequest.content)
-            allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
-            allports = [x.strip() for x in allports]
-            self.__status = [allports[x: x + 4] for x in range(0, len(allports), 4)]
-
             noProblem = True
-            for num, portStatus in enumerate(self.__status, start=1):
-                if len(portStatus) == 4:
-                    # Check that number matches location in list
-                    portCheck = portStatus[0].isnumeric() and int(portStatus[0]) == num
-                    stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
-                    speedCheck = portStatus[2] in speedmap
-                    # Conscider MTU always below 10k
-                    mtuCheck = portStatus[3].isnumeric() and int(portStatus[3]) < 10000
-                    noProblem = noProblem and portCheck and stateCheck and speedCheck and mtuCheck
-                else:
-                    noProblem = False
-            if noProblem:
-                # Rewrite speed
-                self.__status = [[speedmap[n] if i == 2 else n for i,
-                                  n in enumerate(portStatus)] for portStatus in self.__status]
-                break
-            # This might be a firmware that does not expose mtu. Try again with 3 fields:
-            self.__status = [allports[x: x + 3] for x in range(0, len(allports), 3)]
-            noProblem = True
-            for num, portStatus in enumerate(self.__status, start=1):
-                if len(portStatus) == 3:
-                    # Check that number matches location in list
-                    portCheck = portStatus[0].isnumeric() and int(
-                        portStatus[0]) == num
-                    stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
-                    speedCheck = portStatus[2] in speedmap
+            try:
+                statusRequest = self.__session.get(f'http://{self.hostname}/status.htm', timeout=self.requestTimeout)
+                statusRequest.raise_for_status()
+            except socket.timeout:
+                noProblem = False
 
-                    noProblem = noProblem and portCheck and stateCheck and speedCheck
-                else:
-                    noProblem = False
             if noProblem:
-                # Rewrite speed
-                self.__status = [[speedmap[n] if i == 2 else n for i,
-                                  n in enumerate(portStatus)] for portStatus in self.__status]
-                break
+                if 'RedirectToLoginPage' in statusRequest.text:
+                    self.error = 'Login failed for ' + self.hostname
+                    LOG.error(self.error)
+                    self.__infos = None
+                    raise ConnectionRefusedError(self.error)
+
+                tree = html.fromstring(statusRequest.content)
+                allports = tree.xpath('//tr[@class="portID"]/td[@sel="text"]/text()')
+                allports = [x.strip() for x in allports]
+                self.__status = [allports[x: x + 4] for x in range(0, len(allports), 4)]
+
+                for num, portStatus in enumerate(self.__status, start=1):
+                    if len(portStatus) == 4:
+                        # Check that number matches location in list
+                        portCheck = portStatus[0].isnumeric() and int(portStatus[0]) == num
+                        stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
+                        speedCheck = portStatus[2] in speedmap
+                        # Conscider MTU always below 10k
+                        mtuCheck = portStatus[3].isnumeric() and int(portStatus[3]) < 10000
+                        noProblem = noProblem and portCheck and stateCheck and speedCheck and mtuCheck
+                    else:
+                        noProblem = False
+                if noProblem:
+                    # Rewrite speed
+                    self.__status = [[speedmap[n] if i == 2 else n for i,
+                                     n in enumerate(portStatus)] for portStatus in self.__status]
+                    break
+                # This might be a firmware that does not expose mtu. Try again with 3 fields:
+                self.__status = [allports[x: x + 3] for x in range(0, len(allports), 3)]
+                noProblem = True
+                for num, portStatus in enumerate(self.__status, start=1):
+                    if len(portStatus) == 3:
+                        # Check that number matches location in list
+                        portCheck = portStatus[0].isnumeric() and int(
+                            portStatus[0]) == num
+                        stateCheck = portStatus[1] in ['Aktiv', 'Inaktiv', 'Up', 'Down']
+                        speedCheck = portStatus[2] in speedmap
+
+                        noProblem = noProblem and portCheck and stateCheck and speedCheck
+                    else:
+                        noProblem = False
+                if noProblem:
+                    # Rewrite speed
+                    self.__status = [[speedmap[n] if i == 2 else n for i,
+                                     n in enumerate(portStatus)] for portStatus in self.__status]
+                    break
             LOG.info('Problem while retrieving status for %s'
                      ' this can happen when there is much traffic on the device', self.hostname)
             retries -= 1
@@ -331,6 +340,7 @@ class ProSafeRetrieve:
     def __retrieveStatistics(self):  # noqa: C901
         retries = self.retries
         while retries > 0:
+            noProblem = True
             try:
                 statisticsRequest = self.__session.get(
                     f'http://{self.hostname}/port_statistics.htm', timeout=self.requestTimeout)
@@ -340,41 +350,42 @@ class ProSafeRetrieve:
                 statisticsRequest = self.__session.get(
                     f'http://{self.hostname}/portStats.htm', timeout=self.requestTimeout)
                 statisticsRequest.raise_for_status()
-
-            if 'RedirectToLoginPage' in statisticsRequest.text:
-                self.error = f'Login failed for {self.hostname}'
-                LOG.error(self.error)
-                self.__infos = None
-                self.__status = None
-                raise ConnectionRefusedError(self.error)
-
-            noProblem = True
-
-            tree = html.fromstring(statisticsRequest.content)
-            allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
-            try:
-                allports = [str(int(x, 16)) for x in allports]
-            except ValueError:
-                allports = []
+            except socket.timeout:
                 noProblem = False
 
-            # Some older firmware does not use the input fields
-            if not allports and noProblem:
-                allports = tree.xpath('//tr[@class="portID"]/td[@class="def" and @sel="text"]/text()')
-                # In this case the value is not in hex, still casting to be sure we have a number
+            if noProblem:
+                if 'RedirectToLoginPage' in statisticsRequest.text:
+                    self.error = f'Login failed for {self.hostname}'
+                    LOG.error(self.error)
+                    self.__infos = None
+                    self.__status = None
+                    raise ConnectionRefusedError(self.error)
+
+                tree = html.fromstring(statisticsRequest.content)
+                allports = tree.xpath('//tr[@class="portID"]/input[@type="hidden"]/@value')
                 try:
-                    allports = [str(int(x)) for x in allports]
+                    allports = [str(int(x, 16)) for x in allports]
                 except ValueError:
                     allports = []
                     noProblem = False
 
-            self.__statistics = [allports[x: x + 3] for x in range(0, len(allports), 3)]
+                # Some older firmware does not use the input fields
+                if not allports and noProblem:
+                    allports = tree.xpath('//tr[@class="portID"]/td[@class="def" and @sel="text"]/text()')
+                    # In this case the value is not in hex, still casting to be sure we have a number
+                    try:
+                        allports = [str(int(x)) for x in allports]
+                    except ValueError:
+                        allports = []
+                        noProblem = False
 
-            for _, portStatistics in enumerate(self.__statistics, start=1):
-                if len(portStatistics) != 3:
-                    noProblem = False
-            if noProblem:
-                break
+                self.__statistics = [allports[x: x + 3] for x in range(0, len(allports), 3)]
+
+                for _, portStatistics in enumerate(self.__statistics, start=1):
+                    if len(portStatistics) != 3:
+                        noProblem = False
+                if noProblem:
+                    break
             LOG.info('Problem while retrieving statistics for %s'
                      ' this can happen when there is much traffic on the device', self.hostname)
             retries -= 1
