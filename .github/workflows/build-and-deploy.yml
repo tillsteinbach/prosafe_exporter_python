@@ -59,7 +59,7 @@ jobs:
         uses: actions/checkout@v2.4.0
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v3.6.0
+        uses: docker/metadata-action@v3.6.2
         with:
           images: |
             tillsteinbach/prosafe_exporter_python
