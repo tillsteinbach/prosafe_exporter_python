@@ -143,8 +143,10 @@ class ProSafeRetrieve:
 
     def __login(self):
         if self.loggedIn:
+
             indexPageRequest = self.__session.get(
                 f'http://{self.hostname}/index.htm', timeout=self.requestTimeout)
+
             if 'RedirectToLoginPage' not in indexPageRequest.text:
                 LOG.info('Already logged in for %s', self.hostname)
                 return
@@ -430,7 +432,7 @@ class ProSafeRetrieve:
 
                 LOG.info('Retrieval for %s done', self.hostname)
 
-            except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError):
+            except requests.exceptions.RequestException:
                 self.__infos = None
                 self.__status = None
                 self.__statistics = None
