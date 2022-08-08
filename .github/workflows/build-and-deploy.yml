@@ -30,7 +30,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3.0.2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2.3.1
+      uses: actions/setup-python@v4.2.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -68,7 +68,7 @@ jobs:
             type=edge,
             type=pep440,pattern={{version}}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1.2.0
+        uses: docker/setup-qemu-action@v2.0.0
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v1.6.0
       - name: Setup Cache for buildx
