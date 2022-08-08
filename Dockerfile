@@ -1,4 +1,4 @@
-FROM python:3.6.1-alpine
+FROM python:3.10.6-alpine3.16
 
 ENV CONFIG=/etc/prosafe_exporter/config.yml
 
