@@ -161,7 +161,7 @@ def test_cookiefile(request, firmware, password, httpserver, caplog):
     LOG = logging.getLogger("ProSafeExporter")
     LOG.setLevel(level=logging.INFO)
     # Execute destructor, pytest messes around with the reference count
-    retriever.__del__()  # pylint: disable=unnecessary-dunder-call
+    retriever.__del__()  # pylint: disable=unnecessary-dunder-call,bad-option-value
     del retriever
     assert ' Writing cookiefile cookiefile.txt' in caplog.text
 
@@ -196,7 +196,7 @@ def test_cookiefile(request, firmware, password, httpserver, caplog):
     retrieverNew.retrieve()
     httpserver.check_assertions()
     # Execute destructor, pytest messes around with the reference count
-    retrieverNew.__del__()  # pylint: disable=unnecessary-dunder-call
+    retrieverNew.__del__()  # pylint: disable=unnecessary-dunder-call,bad-option-value
     del retrieverNew
 
     # Test cookie expired
@@ -233,7 +233,7 @@ def test_cookiefile(request, firmware, password, httpserver, caplog):
     retrieverNew2.retrieve()
     httpserver.check_assertions()
     # Execute destructor, pytest messes around with the reference count
-    retrieverNew2.__del__()  # pylint: disable=unnecessary-dunder-call
+    retrieverNew2.__del__()  # pylint: disable=unnecessary-dunder-call,bad-option-value
     del retrieverNew2
 
     with open(cookiefile, 'w', encoding='utf-8') as f:
